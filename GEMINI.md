@@ -32,3 +32,23 @@ The project strictly follows a **Layer-First** architecture:
 * **Widget Decomposition:** Break large `build` methods into separate, reusable stateless/stateful widget classes rather than huge monolithic methods.
 * **Minimal Impact:** Prioritize simple, effective additions and bug fixes over large refactors or modifying working code unnecessarily.
 * **Error & Feedback Handling:** Use the existing app toast/snack notification pattern consistently; do not duplicate notification containers.
+
+---
+
+## 5. Core Modules & Feature Scope
+Orbit is an all-in-one habit and productivity tracker:
+* **Habits & Streaks:** Daily check-ins, routine scheduling, streak tracking, and habit analytics.
+* **Alarms & Reminders/Todo:** Timed alarms, local notification reminders, task management with priorities.
+* **Screen Time Management:** Digital wellbeing, focus sessions, app timers, and screen time insights.
+* **Budget & Ledger:** Expense tracking, budget ceilings, categorical spending breakdown, and income ledger.
+* **Notes:** Quick-capture scratchpad and rich-text notes linked to habits or tasks.
+
+---
+
+## 6. Git Branch Workflow
+* `main`: Production/stable branch.
+* `feature/habits-streaks`: Habit tracking and streak system.
+* `feature/alarms-reminders`: Alarms, notifications, reminders, and todos.
+* `feature/screen-time`: Screen time monitoring, focus modes, and timers.
+* `feature/budget-ledger`: Budgets, ledger, and expense logging.
+* `feature/notes`: Notes creation and document management.
