@@ -96,22 +96,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             onNavigateTab: (index) => setState(() => _currentIndex = index),
             onSettingsTap: () => _showSettingsSheet(context),
           ),
-          const _TabPlaceholder(
+          const _PlaceholderTabView(
             title: 'Alarms & Tasks',
             subtitle: 'Alarms, scheduled notifications & todos',
             icon: IconlyLight.timeCircle,
           ),
-          const _TabPlaceholder(
+          const _PlaceholderTabView(
             title: 'Screen Time',
             subtitle: 'App timers, focus sessions & digital wellbeing',
             icon: IconlyLight.chart,
           ),
-          const _TabPlaceholder(
+          const _PlaceholderTabView(
             title: 'Budget & Ledger',
             subtitle: 'Expense tracking, budgets & income ledger',
             icon: IconlyLight.wallet,
           ),
-          const _TabPlaceholder(
+          const _PlaceholderTabView(
             title: 'Notes',
             subtitle: 'Quick scratchpad & rich-text notes',
             icon: IconlyLight.document,
@@ -314,12 +314,12 @@ class _SettingsSheet extends ConsumerWidget {
   }
 }
 
-class _TabPlaceholder extends StatelessWidget {
+class _PlaceholderTabView extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
 
-  const _TabPlaceholder({
+  const _PlaceholderTabView({
     required this.title,
     required this.subtitle,
     required this.icon,
