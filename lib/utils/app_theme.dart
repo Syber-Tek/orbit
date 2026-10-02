@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   AppTheme._();
+
+  static const String fontFamily = 'PlusJakartaSans';
 
   // --- Light Palette: Warm Eggshell & Charcoal ---
   static const Color lightBg = Color(0xFFF9F9F6);
@@ -24,12 +25,67 @@ class AppTheme {
   static const Color darkPrimary = Color(0xFFF4F4F0);
   static const Color darkOnPrimary = Color(0xFF141517);
 
-  static ThemeData get lightTheme {
-    final baseTextTheme = Typography.blackMountainView;
+  static TextTheme _buildTextTheme({required Color primaryColor, required Color secondaryColor}) {
+    return TextTheme(
+      headlineLarge: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        color: primaryColor,
+        letterSpacing: -0.5,
+      ),
+      headlineMedium: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: primaryColor,
+        letterSpacing: -0.3,
+      ),
+      titleLarge: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: primaryColor,
+        letterSpacing: -0.2,
+      ),
+      titleMedium: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: primaryColor,
+      ),
+      bodyLarge: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: primaryColor,
+      ),
+      bodyMedium: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: secondaryColor,
+      ),
+      labelLarge: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: primaryColor,
+      ),
+      labelMedium: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: secondaryColor,
+      ),
+    );
+  }
 
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: fontFamily,
       scaffoldBackgroundColor: lightBg,
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
@@ -45,39 +101,9 @@ class AppTheme {
         outline: lightBorder,
         surfaceContainerHighest: lightSurfaceContainer,
       ),
-      textTheme: GoogleFonts.interTextTheme(baseTextTheme).copyWith(
-        headlineLarge: GoogleFonts.inter(
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          color: lightTextPrimary,
-          letterSpacing: -0.5,
-        ),
-        headlineMedium: GoogleFonts.inter(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: lightTextPrimary,
-          letterSpacing: -0.3,
-        ),
-        titleLarge: GoogleFonts.inter(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: lightTextPrimary,
-        ),
-        bodyLarge: GoogleFonts.inter(
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-          color: lightTextPrimary,
-        ),
-        bodyMedium: GoogleFonts.inter(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          color: lightTextSecondary,
-        ),
-        labelLarge: GoogleFonts.inter(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: lightTextPrimary,
-        ),
+      textTheme: _buildTextTheme(
+        primaryColor: lightTextPrimary,
+        secondaryColor: lightTextSecondary,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -86,9 +112,11 @@ class AppTheme {
         centerTitle: false,
         iconTheme: IconThemeData(color: lightTextPrimary),
         titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
           color: lightTextPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
         ),
       ),
       cardTheme: CardThemeData(
@@ -108,11 +136,10 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    final baseTextTheme = Typography.whiteMountainView;
-
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamily: fontFamily,
       scaffoldBackgroundColor: darkBg,
       colorScheme: const ColorScheme(
         brightness: Brightness.dark,
@@ -128,39 +155,9 @@ class AppTheme {
         outline: darkBorder,
         surfaceContainerHighest: darkSurfaceContainer,
       ),
-      textTheme: GoogleFonts.interTextTheme(baseTextTheme).copyWith(
-        headlineLarge: GoogleFonts.inter(
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          color: darkTextPrimary,
-          letterSpacing: -0.5,
-        ),
-        headlineMedium: GoogleFonts.inter(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: darkTextPrimary,
-          letterSpacing: -0.3,
-        ),
-        titleLarge: GoogleFonts.inter(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: darkTextPrimary,
-        ),
-        bodyLarge: GoogleFonts.inter(
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-          color: darkTextPrimary,
-        ),
-        bodyMedium: GoogleFonts.inter(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          color: darkTextSecondary,
-        ),
-        labelLarge: GoogleFonts.inter(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: darkTextPrimary,
-        ),
+      textTheme: _buildTextTheme(
+        primaryColor: darkTextPrimary,
+        secondaryColor: darkTextSecondary,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -169,9 +166,11 @@ class AppTheme {
         centerTitle: false,
         iconTheme: IconThemeData(color: darkTextPrimary),
         titleTextStyle: TextStyle(
+          fontFamily: fontFamily,
           color: darkTextPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
         ),
       ),
       cardTheme: CardThemeData(
