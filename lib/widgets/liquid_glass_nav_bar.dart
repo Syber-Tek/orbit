@@ -316,31 +316,23 @@ class LiquidGlassNavBar extends StatelessWidget {
                   height: 64,
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF141923).withValues(alpha: 0.65)
-                        : Colors.white.withValues(alpha: 0.72),
+                        ? const Color(0xFF1C1D21).withValues(alpha: 0.82)
+                        : const Color(0xFFFFFFFF).withValues(alpha: 0.82),
                     borderRadius: BorderRadius.circular(36),
                     border: Border.all(
                       color: isDark
-                          ? Colors.white.withValues(alpha: 0.16)
-                          : Colors.white.withValues(alpha: 0.85),
+                          ? const Color(0xFF2A2B30)
+                          : const Color(0xFFE5E5DF),
                       width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: isDark
-                            ? Colors.black.withValues(alpha: 0.45)
-                            : Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 28,
+                            ? Colors.black.withValues(alpha: 0.35)
+                            : Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 24,
                         spreadRadius: 0,
-                        offset: const Offset(0, 8),
-                      ),
-                      BoxShadow(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.04)
-                            : Colors.white.withValues(alpha: 0.6),
-                        blurRadius: 6,
-                        spreadRadius: -1,
-                        offset: const Offset(0, 1),
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
@@ -448,27 +440,22 @@ class LiquidGlassNavBar extends StatelessWidget {
               height: 58,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFF7A29),
-                    Color(0xFFF9530B),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: isDark ? const Color(0xFFEDEDEA) : const Color(0xFF18181B),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFF6319).withValues(alpha: 0.42),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 6),
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.35)
+                        : const Color(0xFF18181B).withValues(alpha: 0.16),
+                    blurRadius: 16,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(
                   Icons.add_rounded,
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF141517) : Colors.white,
                   size: 28,
                 ),
               ),
