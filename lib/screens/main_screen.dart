@@ -15,41 +15,95 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int _currentIndex = 0;
 
   final List<LiquidNavItem> _navItems = [
-    const LiquidNavItem(
-      icon: IconlyLight.home,
-      activeIcon: IconlyBold.home,
-      label: 'Home',
-    ),
-    const LiquidNavItem(
-      icon: IconlyLight.wallet,
-      activeIcon: IconlyBold.wallet,
-      label: 'Expenses',
-    ),
     LiquidNavItem(
       builder: (context, isSelected, color) => TargetArrowIcon(
         color: color,
         isSelected: isSelected,
       ),
-      label: 'Goals',
+      label: 'Habits',
     ),
     const LiquidNavItem(
-      icon: IconlyLight.profile,
-      activeIcon: IconlyBold.profile,
-      label: 'Profile',
+      icon: IconlyLight.timeCircle,
+      activeIcon: IconlyBold.timeCircle,
+      label: 'Alarms & Tasks',
+    ),
+    const LiquidNavItem(
+      icon: IconlyLight.chart,
+      activeIcon: IconlyBold.chart,
+      label: 'Screen Time',
+    ),
+    const LiquidNavItem(
+      icon: IconlyLight.wallet,
+      activeIcon: IconlyBold.wallet,
+      label: 'Budget',
+    ),
+    const LiquidNavItem(
+      icon: IconlyLight.document,
+      activeIcon: IconlyBold.document,
+      label: 'Notes',
     ),
   ];
 
+  void _showSettingsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _SettingsSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       extendBody: true,
+      appBar: AppBar(
+        title: Text(
+          _currentIndex == 0 ? 'Orbit' : _navItems[_currentIndex].label,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(IconlyLight.setting, size: 22),
+            onPressed: () => _showSettingsSheet(context),
+            tooltip: 'Settings & Theme',
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: IndexedStack(
         index: _currentIndex,
         children: const [
-          _TabPlaceholder(title: 'Home', icon: IconlyLight.home),
-          _TabPlaceholder(title: 'Expenses', icon: IconlyLight.wallet),
-          _TabPlaceholder(title: 'Goals', icon: IconlyLight.discovery),
-          _ProfileTab(),
+          _TabPlaceholder(
+            title: 'Habits & Streaks',
+            subtitle: 'Today\'s habits, streaks & daily pulse',
+            icon: IconlyLight.discovery,
+          ),
+          _TabPlaceholder(
+            title: 'Alarms & Tasks',
+            subtitle: 'Alarms, scheduled notifications & todos',
+            icon: IconlyLight.timeCircle,
+          ),
+          _TabPlaceholder(
+            title: 'Screen Time',
+            subtitle: 'App timers, focus sessions & digital wellbeing',
+            icon: IconlyLight.chart,
+          ),
+          _TabPlaceholder(
+            title: 'Budget & Ledger',
+            subtitle: 'Expense tracking, budgets & income ledger',
+            icon: IconlyLight.wallet,
+          ),
+          _TabPlaceholder(
+            title: 'Notes',
+            subtitle: 'Quick scratchpad & rich-text notes',
+            icon: IconlyLight.document,
+          ),
         ],
       ),
       bottomNavigationBar: LiquidGlassNavBar(
@@ -61,103 +115,131 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         },
         items: _navItems,
         onAddExpense: () {
-          // TODO: Open add expense workflow
+          // TODO: Open add expense modal
         },
         onAddTodo: () {
-          // TODO: Open add todo workflow
+          // TODO: Open add todo modal
         },
         onAddNote: () {
-          // TODO: Open add note workflow
+          // TODO: Open add note modal
         },
       ),
     );
   }
 }
 
-class _ProfileTab extends ConsumerWidget {
-  const _ProfileTab();
+class _SettingsSheet extends ConsumerWidget {
+  const _SettingsSheet();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeProvider);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Settings',
-              style: theme.textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Appearance & Preferences',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 28),
-            Container(
-              padding: const EdgeInsets.all(16),
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        16,
+        24,
+        MediaQuery.of(context).padding.bottom + 24,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.outline),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.palette_outlined,
-                        size: 20,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Theme Mode',
-                        style: theme.textTheme.titleLarge?.copyWith(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _buildThemeOption(
-                        context: context,
-                        ref: ref,
-                        mode: ThemeMode.light,
-                        label: 'Light',
-                        icon: Icons.light_mode_outlined,
-                        selected: themeMode == ThemeMode.light,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildThemeOption(
-                        context: context,
-                        ref: ref,
-                        mode: ThemeMode.dark,
-                        label: 'Dark',
-                        icon: Icons.dark_mode_outlined,
-                        selected: themeMode == ThemeMode.dark,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildThemeOption(
-                        context: context,
-                        ref: ref,
-                        mode: ThemeMode.system,
-                        label: 'Auto',
-                        icon: Icons.brightness_auto_outlined,
-                        selected: themeMode == ThemeMode.system,
-                      ),
-                    ],
-                  ),
-                ],
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Settings & Preferences',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: theme.colorScheme.outline),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.palette_outlined,
+                      size: 20,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Appearance',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _buildThemeOption(
+                      context: context,
+                      ref: ref,
+                      mode: ThemeMode.light,
+                      label: 'Light',
+                      icon: Icons.light_mode_outlined,
+                      selected: themeMode == ThemeMode.light,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildThemeOption(
+                      context: context,
+                      ref: ref,
+                      mode: ThemeMode.dark,
+                      label: 'Dark',
+                      icon: Icons.dark_mode_outlined,
+                      selected: themeMode == ThemeMode.dark,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildThemeOption(
+                      context: context,
+                      ref: ref,
+                      mode: ThemeMode.system,
+                      label: 'Auto',
+                      icon: Icons.brightness_auto_outlined,
+                      selected: themeMode == ThemeMode.system,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -183,12 +265,12 @@ class _ProfileTab extends ConsumerWidget {
           decoration: BoxDecoration(
             color: selected
                 ? theme.colorScheme.primary
-                : theme.colorScheme.surfaceContainerHighest,
+                : theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
                   ? theme.colorScheme.primary
-                  : Colors.transparent,
+                  : theme.colorScheme.outline,
             ),
           ),
           child: Column(
@@ -221,10 +303,12 @@ class _ProfileTab extends ConsumerWidget {
 
 class _TabPlaceholder extends StatelessWidget {
   final String title;
+  final String subtitle;
   final IconData icon;
 
   const _TabPlaceholder({
     required this.title,
+    required this.subtitle,
     required this.icon,
   });
 
@@ -233,22 +317,43 @@ class _TabPlaceholder extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 48,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: theme.colorScheme.outline),
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
