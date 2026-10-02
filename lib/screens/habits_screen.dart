@@ -1,0 +1,265 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:orbit/models/habit.dart';
+import 'package:orbit/services/habit_provider.dart';
+import 'package:orbit/widgets/add_habit_sheet.dart';
+import 'package:orbit/widgets/daily_pulse_row.dart';
+import 'package:orbit/widgets/habit_item_card.dart';
+import 'package:orbit/widgets/streak_hero_card.dart';
+
+class HabitsScreen extends ConsumerWidget {
+  final ValueChanged<int>? onNavigateTab;
+  final VoidCallback? onSettingsTap;
+
+  const HabitsScreen({
+    super.key,
+    this.onNavigateTab,
+    this.onSettingsTap,
+  });
+
+  void _showAddHabit(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddHabitSheet(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final habits = ref.watch(filteredHabitsProvider);
+    final allHabits = ref.watch(habitListProvider);
+    final activeFilter = ref.watch(selectedHabitFilterProvider);
+
+    final completedCount = allHabits.where((h) => h.isCompletedToday).length;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Header Greeting & Date
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'TODAY\'S MOMENTUM',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Orbit Daily',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Top Action Buttons
+                      Row(
+                        children: [
+                          IconButton.filledTonal(
+                            onPressed: () => _showAddHabit(context),
+                            style: IconButton.styleFrom(
+                              backgroundColor: isDark
+                                  ? const Color(0xFF222329)
+                                  : const Color(0xFFEAEAE4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            icon: Icon(
+                              Icons.add_rounded,
+                              color: theme.colorScheme.onSurface,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            onPressed: onSettingsTap,
+                            style: IconButton.styleFrom(
+                              backgroundColor: isDark
+                                  ? const Color(0xFF222329)
+                                  : const Color(0xFFEAEAE4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            icon: Icon(
+                              Icons.tune_rounded,
+                              color: theme.colorScheme.onSurface,
+                              size: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Hero Streak Card (Refs 1 & 5)
+                  const StreakHeroCard(),
+                  const SizedBox(height: 24),
+
+                  // Orbit Pulse Bento Row (Ref 4)
+                  DailyPulseRow(
+                    onScreenTimeTap: () => onNavigateTab?.call(2), // Screen Time Tab
+                    onAlarmsTap: () => onNavigateTab?.call(1),     // Alarms & Tasks Tab
+                    onBudgetTap: () => onNavigateTab?.call(3),     // Budget Tab
+                  ),
+                  const SizedBox(height: 26),
+
+                  // Section Title & Filter Pills
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'TODAY\'S HABITS',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        ),
+                      ),
+                      Text(
+                        '$completedCount/${allHabits.length} Done',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Filter Row (All, Morning, Afternoon, Evening)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterPill(
+                          context: context,
+                          ref: ref,
+                          label: 'All Habits',
+                          isSelected: activeFilter == null,
+                          onTap: () => ref.read(selectedHabitFilterProvider.notifier).setFilter(null),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterPill(
+                          context: context,
+                          ref: ref,
+                          label: 'Morning',
+                          isSelected: activeFilter == HabitTimeOfDay.morning,
+                          onTap: () => ref.read(selectedHabitFilterProvider.notifier).setFilter(HabitTimeOfDay.morning),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterPill(
+                          context: context,
+                          ref: ref,
+                          label: 'Afternoon',
+                          isSelected: activeFilter == HabitTimeOfDay.afternoon,
+                          onTap: () => ref.read(selectedHabitFilterProvider.notifier).setFilter(HabitTimeOfDay.afternoon),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildFilterPill(
+                          context: context,
+                          ref: ref,
+                          label: 'Evening',
+                          isSelected: activeFilter == HabitTimeOfDay.evening,
+                          onTap: () => ref.read(selectedHabitFilterProvider.notifier).setFilter(HabitTimeOfDay.evening),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Habits List
+                  if (habits.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 36),
+                      child: Center(
+                        child: Text(
+                          'No habits for this time period.',
+                          style: TextStyle(
+                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ...habits.map((habit) {
+                      return HabitItemCard(
+                        habit: habit,
+                        onToggle: () {
+                          ref.read(habitListProvider.notifier).toggleHabit(habit.id);
+                        },
+                      );
+                    }),
+                ]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterPill({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary
+              : (isDark ? const Color(0xFF1E1F25) : const Color(0xFFEEEEEA)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected
+                ? theme.colorScheme.onPrimary
+                : (isDark ? Colors.grey.shade400 : Colors.grey.shade700),
+          ),
+        ),
+      ),
+    );
+  }
+}

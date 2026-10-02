@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
+import 'package:orbit/screens/habits_screen.dart';
 import 'package:orbit/utils/theme_provider.dart';
+import 'package:orbit/widgets/add_habit_sheet.dart';
 import 'package:orbit/widgets/liquid_glass_nav_bar.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
@@ -53,53 +55,63 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
+  void _showAddHabit(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddHabitSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
       extendBody: true,
-      appBar: AppBar(
-        title: Text(
-          _currentIndex == 0 ? 'Orbit' : _navItems[_currentIndex].label,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(IconlyLight.setting, size: 22),
-            onPressed: () => _showSettingsSheet(context),
-            tooltip: 'Settings & Theme',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar: _currentIndex == 0
+          ? null
+          : AppBar(
+              title: Text(
+                _navItems[_currentIndex].label,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(IconlyLight.setting, size: 22),
+                  onPressed: () => _showSettingsSheet(context),
+                  tooltip: 'Settings & Theme',
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          _TabPlaceholder(
-            title: 'Habits & Streaks',
-            subtitle: 'Today\'s habits, streaks & daily pulse',
-            icon: IconlyLight.discovery,
+        children: [
+          HabitsScreen(
+            onNavigateTab: (index) => setState(() => _currentIndex = index),
+            onSettingsTap: () => _showSettingsSheet(context),
           ),
-          _TabPlaceholder(
+          const _TabPlaceholder(
             title: 'Alarms & Tasks',
             subtitle: 'Alarms, scheduled notifications & todos',
             icon: IconlyLight.timeCircle,
           ),
-          _TabPlaceholder(
+          const _TabPlaceholder(
             title: 'Screen Time',
             subtitle: 'App timers, focus sessions & digital wellbeing',
             icon: IconlyLight.chart,
           ),
-          _TabPlaceholder(
+          const _TabPlaceholder(
             title: 'Budget & Ledger',
             subtitle: 'Expense tracking, budgets & income ledger',
             icon: IconlyLight.wallet,
           ),
-          _TabPlaceholder(
+          const _TabPlaceholder(
             title: 'Notes',
             subtitle: 'Quick scratchpad & rich-text notes',
             icon: IconlyLight.document,
@@ -114,6 +126,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           });
         },
         items: _navItems,
+        onAddHabit: () => _showAddHabit(context),
         onAddExpense: () {
           // TODO: Open add expense modal
         },

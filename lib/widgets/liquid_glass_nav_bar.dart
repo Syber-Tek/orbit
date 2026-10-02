@@ -98,6 +98,7 @@ class LiquidGlassNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final List<LiquidNavItem> items;
+  final VoidCallback? onAddHabit;
   final VoidCallback? onAddExpense;
   final VoidCallback? onAddTodo;
   final VoidCallback? onAddNote;
@@ -107,6 +108,7 @@ class LiquidGlassNavBar extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     required this.items,
+    this.onAddHabit,
     this.onAddExpense,
     this.onAddTodo,
     this.onAddNote,
@@ -169,6 +171,18 @@ class LiquidGlassNavBar extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  _buildQuickActionTile(
+                    context: context,
+                    icon: Icons.local_fire_department_rounded,
+                    title: 'New Habit',
+                    subtitle: 'Track a new daily routine or goal',
+                    accentColor: const Color(0xFFFF6B2B),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      onAddHabit?.call();
+                    },
+                  ),
+                  const SizedBox(height: 10),
                   _buildQuickActionTile(
                     context: context,
                     icon: Icons.savings_rounded,

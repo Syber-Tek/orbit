@@ -1,0 +1,151 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:orbit/models/habit.dart';
+
+class HabitListNotifier extends Notifier<List<Habit>> {
+  @override
+  List<Habit> build() {
+    final now = DateTime.now();
+    final today = _dateKey(now);
+    final yesterday = _dateKey(now.subtract(const Duration(days: 1)));
+    final twoDaysAgo = _dateKey(now.subtract(const Duration(days: 2)));
+    final threeDaysAgo = _dateKey(now.subtract(const Duration(days: 3)));
+
+    return [
+      Habit(
+        id: '1',
+        title: 'Morning Meditation',
+        category: 'Mindfulness',
+        iconCodePoint: Icons.self_improvement_rounded.codePoint,
+        colorValue: 0xFF10B981, // Emerald
+        targetCount: 15,
+        currentCount: 15,
+        unit: 'mins',
+        streak: 14,
+        timeOfDay: HabitTimeOfDay.morning,
+        completedDates: [threeDaysAgo, twoDaysAgo, yesterday, today],
+        createdAt: now.subtract(const Duration(days: 14)),
+      ),
+      Habit(
+        id: '2',
+        title: 'Drink 2.5L Water',
+        category: 'Health',
+        iconCodePoint: Icons.water_drop_rounded.codePoint,
+        colorValue: 0xFF3B82F6, // Blue
+        targetCount: 2500,
+        currentCount: 2000,
+        unit: 'ml',
+        streak: 9,
+        timeOfDay: HabitTimeOfDay.anytime,
+        completedDates: [threeDaysAgo, twoDaysAgo, yesterday],
+        createdAt: now.subtract(const Duration(days: 9)),
+      ),
+      Habit(
+        id: '3',
+        title: 'Read 20 Pages',
+        category: 'Growth',
+        iconCodePoint: Icons.menu_book_rounded.codePoint,
+        colorValue: 0xFFF59E0B, // Amber
+        targetCount: 20,
+        currentCount: 20,
+        unit: 'pages',
+        streak: 12,
+        timeOfDay: HabitTimeOfDay.evening,
+        completedDates: [threeDaysAgo, twoDaysAgo, yesterday, today],
+        createdAt: now.subtract(const Duration(days: 12)),
+      ),
+      Habit(
+        id: '4',
+        title: 'Daily Workout',
+        category: 'Fitness',
+        iconCodePoint: Icons.fitness_center_rounded.codePoint,
+        colorValue: 0xFFEC4899, // Pink
+        targetCount: 45,
+        currentCount: 0,
+        unit: 'mins',
+        streak: 6,
+        timeOfDay: HabitTimeOfDay.afternoon,
+        completedDates: [threeDaysAgo, twoDaysAgo, yesterday],
+        createdAt: now.subtract(const Duration(days: 6)),
+      ),
+    ];
+  }
+
+  static String _dateKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  void toggleHabit(String id) {
+    final today = _dateKey(DateTime.now());
+
+    state = state.map((habit) {
+      if (habit.id == id) {
+        final isDone = habit.completedDates.contains(today);
+        final newDates = List<String>.from(habit.completedDates);
+
+        if (isDone) {
+          newDates.remove(today);
+          return habit.copyWith(
+            completedDates: newDates,
+            streak: habit.streak > 0 ? habit.streak - 1 : 0,
+            currentCount: 0,
+          );
+        } else {
+          newDates.add(today);
+          return habit.copyWith(
+            completedDates: newDates,
+            streak: habit.streak + 1,
+            currentCount: habit.targetCount,
+          );
+        }
+      }
+      return habit;
+    }).toList();
+  }
+
+  void addHabit(Habit habit) {
+    state = [habit, ...state];
+  }
+
+  void deleteHabit(String id) {
+    state = state.where((h) => h.id != id).toList();
+  }
+}
+
+final habitListProvider = NotifierProvider<HabitListNotifier, List<Habit>>(
+  HabitListNotifier.new,
+);
+
+class HabitFilterNotifier extends Notifier<HabitTimeOfDay?> {
+  @override
+  HabitTimeOfDay? build() => null;
+
+  void setFilter(HabitTimeOfDay? filter) {
+    state = filter;
+  }
+}
+
+final selectedHabitFilterProvider = NotifierProvider<HabitFilterNotifier, HabitTimeOfDay?>(
+  HabitFilterNotifier.new,
+);
+
+final filteredHabitsProvider = Provider<List<Habit>>((ref) {
+  final habits = ref.watch(habitListProvider);
+  final filter = ref.watch(selectedHabitFilterProvider);
+
+  if (filter == null) return habits;
+  return habits.where((h) => h.timeOfDay == filter || h.timeOfDay == HabitTimeOfDay.anytime).toList();
+});
+
+final overallStreakProvider = Provider<int>((ref) {
+  final habits = ref.watch(habitListProvider);
+  if (habits.isEmpty) return 0;
+  return habits.map((h) => h.streak).reduce((a, b) => a > b ? a : b);
+});
+
+final dailyCompletionRateProvider = Provider<double>((ref) {
+  final habits = ref.watch(habitListProvider);
+  if (habits.isEmpty) return 0.0;
+  final done = habits.where((h) => h.isCompletedToday).length;
+  return done / habits.length;
+});
