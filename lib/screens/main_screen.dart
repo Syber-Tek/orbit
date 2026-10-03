@@ -5,6 +5,7 @@ import 'package:orbit/screens/habits_screen.dart';
 import 'package:orbit/utils/theme_provider.dart';
 import 'package:orbit/widgets/add_habit_sheet.dart';
 import 'package:orbit/widgets/liquid_glass_nav_bar.dart';
+import 'package:orbit/widgets/note_editor_sheet.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -25,7 +26,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     const LiquidNavItem(
       icon: IconlyLight.timeCircle,
       activeIcon: IconlyBold.timeCircle,
-      label: 'Alarms & Tasks',
+      label: 'Tasks',
     ),
     const LiquidNavItem(
       icon: IconlyLight.chart,
@@ -35,12 +36,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     const LiquidNavItem(
       icon: IconlyLight.wallet,
       activeIcon: IconlyBold.wallet,
-      label: 'Budget',
-    ),
-    const LiquidNavItem(
-      icon: IconlyLight.document,
-      activeIcon: IconlyBold.document,
-      label: 'Notes',
+      label: 'Ledger',
     ),
   ];
 
@@ -59,6 +55,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const AddHabitSheet(),
+    );
+  }
+
+  void _showAddNote(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const NoteEditorSheet(),
     );
   }
 
@@ -104,8 +109,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             onSettingsTap: () => _showSettingsSheet(context),
           ),
           const _PlaceholderTabView(
-            title: 'Alarms & Tasks',
-            subtitle: 'Alarms, scheduled notifications & todos',
+            title: 'Tasks',
+            subtitle: 'Tasks, scheduled reminders & timed alarms',
             icon: IconlyLight.timeCircle,
           ),
           const _PlaceholderTabView(
@@ -114,14 +119,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             icon: IconlyLight.chart,
           ),
           const _PlaceholderTabView(
-            title: 'Budget & Ledger',
-            subtitle: 'Expense tracking, budgets & income ledger',
+            title: 'Ledger',
+            subtitle: 'Budget ceiling & expense tracking',
             icon: IconlyLight.wallet,
-          ),
-          const _PlaceholderTabView(
-            title: 'Notes',
-            subtitle: 'Quick scratchpad & rich-text notes',
-            icon: IconlyLight.document,
           ),
         ],
       ),
@@ -140,9 +140,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         onAddTodo: () {
           // TODO: Open add todo modal
         },
-        onAddNote: () {
-          // TODO: Open add note modal
-        },
+        onAddNote: () => _showAddNote(context),
       ),
     );
   }

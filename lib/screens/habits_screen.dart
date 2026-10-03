@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/habit.dart';
+import 'package:orbit/screens/all_notes_screen.dart';
 import 'package:orbit/services/habit_provider.dart';
+import 'package:orbit/services/note_provider.dart';
 import 'package:orbit/widgets/daily_pulse_row.dart';
 import 'package:orbit/widgets/habit_item_card.dart';
+import 'package:orbit/widgets/note_card.dart';
+import 'package:orbit/widgets/note_editor_sheet.dart';
 import 'package:orbit/widgets/streak_hero_card.dart';
 
 class HabitsScreen extends ConsumerWidget {
@@ -186,6 +190,128 @@ class HabitsScreen extends ConsumerWidget {
                         },
                       );
                     }),
+
+                  const SizedBox(height: 28),
+
+                  // Quick Notes Section (Inspired by Ref 3)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'QUICK NOTES',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => const NoteEditorSheet(),
+                              );
+                            },
+                            icon: const Icon(Icons.add_rounded, size: 20),
+                            tooltip: 'Add Note',
+                            style: IconButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(34, 34),
+                              backgroundColor: isDark
+                                  ? const Color(0xFF1E1F25)
+                                  : const Color(0xFFEEEEEE),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const AllNotesScreen()),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF1E1F25)
+                                    : const Color(0xFFEEEEEE),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'All Notes',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.arrow_outward_rounded, size: 14),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 2 Note Cards Preview
+                  Builder(
+                    builder: (context) {
+                      final topNotes = ref.watch(topNotesProvider);
+                      if (topNotes.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF18191E) : Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                            ),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'No notes yet. Tap + to add one.',
+                              style: TextStyle(fontSize: 13, color: Colors.grey),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 140,
+                              child: NoteCard(note: topNotes[0]),
+                            ),
+                          ),
+                          if (topNotes.length > 1) ...[
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: SizedBox(
+                                height: 140,
+                                child: NoteCard(note: topNotes[1]),
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
                 ]),
               ),
             ),
