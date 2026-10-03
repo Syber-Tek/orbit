@@ -40,10 +40,16 @@ class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
     _contentController = NoteEditingController(text: widget.initialNote?.content ?? '');
     _selectedColor = widget.initialNote?.colorValue ?? _availableColors.first;
     _reminderAt = widget.initialNote?.reminderAt;
+    _contentController.addListener(_onContentChanged);
+  }
+
+  void _onContentChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _contentController.removeListener(_onContentChanged);
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
@@ -430,6 +436,95 @@ class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
                   ),
                 ],
               ),
+            ),
+            // Interactive Checklist Section (rendered if content contains checklist items)
+            Builder(
+              builder: (context) {
+                final checklistItems = NoteFormattingHelper.getChecklistItems(_contentController.text);
+                if (checklistItems.isEmpty) return const SizedBox.shrink();
+
+                final doneCount = checklistItems.where((i) => i.isChecked).length;
+
+                return Container(
+                  margin: const EdgeInsets.only(top: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF16171D) : const Color(0xFFF3F3F0),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF282933) : const Color(0xFFE2E2DC),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'CHECKLIST ($doneCount/${checklistItems.length})',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            'Tap box to check / uncheck',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...checklistItems.map((item) {
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              NoteFormattingHelper.toggleChecklistAtLine(_contentController, item.lineIndex);
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    item.isChecked
+                                        ? Icons.check_box_rounded
+                                        : Icons.check_box_outline_blank_rounded,
+                                    size: 19,
+                                    color: item.isChecked
+                                        ? const Color(0xFF10B981)
+                                        : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      item.text.isEmpty ? '(Empty task)' : item.text,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        decoration: item.isChecked ? TextDecoration.lineThrough : null,
+                                        color: item.isChecked
+                                            ? (isDark ? Colors.grey.shade500 : Colors.grey.shade400)
+                                            : (isDark ? const Color(0xFFEDEDEA) : const Color(0xFF18181B)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
 

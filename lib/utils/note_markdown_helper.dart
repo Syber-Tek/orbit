@@ -10,6 +10,11 @@ class NoteListInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
+    // If Android IME is currently composing a word or suggestion, do not disturb it!
+    if (newValue.composing.isValid && !newValue.composing.isCollapsed) {
+      return newValue;
+    }
+
     // Only intercept when user pressed enter (text grew and ends with or contains \n at cursor)
     if (newValue.text.length > oldValue.text.length &&
         newValue.selection.isCollapsed &&
@@ -26,10 +31,10 @@ class NoteListInputFormatter extends TextInputFormatter {
           // Case 1: Empty checklist item -> Exit checklist
           if (prevLine == '- [ ] ' || prevLine == '- [x] ' || prevLine == '- [X] ') {
             final startOfPrevLine = cursorPos - 1 - prevLine.length;
-            final newText = newValue.text.replaceRange(startOfPrevLine, cursorPos, '\n');
+            final newText = newValue.text.replaceRange(startOfPrevLine, cursorPos, '');
             return TextEditingValue(
               text: newText,
-              selection: TextSelection.collapsed(offset: startOfPrevLine + 1),
+              selection: TextSelection.collapsed(offset: startOfPrevLine),
             );
           }
 
@@ -47,10 +52,10 @@ class NoteListInputFormatter extends TextInputFormatter {
           final emptyNumMatch = RegExp(r'^(\d+)\.\s$').firstMatch(prevLine);
           if (emptyNumMatch != null) {
             final startOfPrevLine = cursorPos - 1 - prevLine.length;
-            final newText = newValue.text.replaceRange(startOfPrevLine, cursorPos, '\n');
+            final newText = newValue.text.replaceRange(startOfPrevLine, cursorPos, '');
             return TextEditingValue(
               text: newText,
-              selection: TextSelection.collapsed(offset: startOfPrevLine + 1),
+              selection: TextSelection.collapsed(offset: startOfPrevLine),
             );
           }
 
@@ -99,9 +104,11 @@ class NoteEditingController extends TextEditingController {
 
       // Checklist item: Completed
       if (line.startsWith('- [x] ') || line.startsWith('- [X] ')) {
+        final prefix = line.length >= 6 ? line.substring(0, 6) : line;
+        final content = line.length >= 6 ? line.substring(6) : '';
         spans.add(
           TextSpan(
-            text: line.substring(0, 6),
+            text: prefix,
             style: defaultStyle.copyWith(
               fontWeight: FontWeight.w700,
               color: isDark ? const Color(0xFF10B981) : const Color(0xFF059669),
@@ -110,7 +117,7 @@ class NoteEditingController extends TextEditingController {
         );
         spans.add(
           TextSpan(
-            text: '${line.substring(6)}$suffix',
+            text: '$content$suffix',
             style: defaultStyle.copyWith(
               decoration: TextDecoration.lineThrough,
               color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
@@ -122,16 +129,18 @@ class NoteEditingController extends TextEditingController {
 
       // Checklist item: Uncompleted
       if (line.startsWith('- [ ] ')) {
+        final prefix = line.length >= 6 ? line.substring(0, 6) : line;
+        final content = line.length >= 6 ? line.substring(6) : '';
         spans.add(
           TextSpan(
-            text: line.substring(0, 6),
+            text: prefix,
             style: defaultStyle.copyWith(
               fontWeight: FontWeight.w700,
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
           ),
         );
-        _parseInlineBold(line.substring(6), defaultStyle, spans, suffix: suffix);
+        _parseInlineBold(content, defaultStyle, spans, suffix: suffix);
         continue;
       }
 
@@ -175,7 +184,7 @@ class NoteEditingController extends TextEditingController {
       // Inner bold content
       spans.add(
         TextSpan(
-          text: match.group(0), // Keeps asterisks typed, but highlights them bold
+          text: match.group(0),
           style: baseStyle.copyWith(fontWeight: FontWeight.w800),
         ),
       );
@@ -190,6 +199,18 @@ class NoteEditingController extends TextEditingController {
       }
     }
   }
+}
+
+class NoteChecklistItem {
+  final int lineIndex;
+  final String text;
+  final bool isChecked;
+
+  const NoteChecklistItem({
+    required this.lineIndex,
+    required this.text,
+    required this.isChecked,
+  });
 }
 
 /// Helper actions for the formatting accessory bar
@@ -252,8 +273,10 @@ class NoteFormattingHelper {
     // Find line bounds
     final lineStart = text.lastIndexOf('\n', start > 0 ? start - 1 : 0);
     final actualLineStart = lineStart == -1 ? 0 : lineStart + 1;
+    final nextNewline = text.indexOf('\n', actualLineStart);
+    final lineEnd = nextNewline == -1 ? text.length : nextNewline;
 
-    final currentLine = text.substring(actualLineStart);
+    final currentLine = text.substring(actualLineStart, lineEnd);
     final numMatch = RegExp(r'^(\d+)\.\s').firstMatch(currentLine);
 
     if (numMatch != null) {
@@ -280,12 +303,13 @@ class NoteFormattingHelper {
       final newText = text.replaceRange(actualLineStart, actualLineStart, prefix);
       controller.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.collapsed(offset: start + prefix.length),
+        selection: TextSelection.collapsed(offset: (start + prefix.length).clamp(0, newText.length)),
       );
     }
   }
 
-  /// Toggles or inserts a checklist item (- [ ] ) on the current line
+  /// Toggles or cycles a checklist item:
+  /// normal -> [ ] unchecked -> [x] checked -> normal
   static void toggleChecklist(TextEditingController controller) {
     final text = controller.text;
     final selection = controller.selection;
@@ -294,25 +318,82 @@ class NoteFormattingHelper {
     // Find line bounds
     final lineStart = text.lastIndexOf('\n', start > 0 ? start - 1 : 0);
     final actualLineStart = lineStart == -1 ? 0 : lineStart + 1;
+    final nextNewline = text.indexOf('\n', actualLineStart);
+    final lineEnd = nextNewline == -1 ? text.length : nextNewline;
 
-    final currentLine = text.substring(actualLineStart);
-    if (currentLine.startsWith('- [ ] ') || currentLine.startsWith('- [x] ') || currentLine.startsWith('- [X] ')) {
-      // Remove checklist prefix
-      const len = 6;
-      final newText = text.replaceRange(actualLineStart, actualLineStart + len, '');
+    final currentLine = text.substring(actualLineStart, lineEnd);
+
+    if (currentLine.startsWith('- [ ] ')) {
+      // Cycle from [ ] to [x] (Checked)
+      final newText = text.replaceRange(actualLineStart, actualLineStart + 6, '- [x] ');
       controller.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.collapsed(offset: (start - len).clamp(0, newText.length)),
+        selection: TextSelection.collapsed(offset: start.clamp(0, newText.length)),
+      );
+    } else if (currentLine.startsWith('- [x] ') || currentLine.startsWith('- [X] ')) {
+      // Cycle from [x] to normal (Remove prefix)
+      final newText = text.replaceRange(actualLineStart, actualLineStart + 6, '');
+      final newOffset = (start - 6).clamp(0, newText.length);
+      controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newOffset),
       );
     } else {
-      // Insert checklist prefix
+      // Insert [ ] unchecked
       const prefix = '- [ ] ';
       final newText = text.replaceRange(actualLineStart, actualLineStart, prefix);
       controller.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.collapsed(offset: start + prefix.length),
+        selection: TextSelection.collapsed(offset: (start + prefix.length).clamp(0, newText.length)),
       );
     }
+  }
+
+  /// Extracts all checklist items from text for quick tap interaction
+  static List<NoteChecklistItem> getChecklistItems(String content) {
+    if (content.isEmpty) return [];
+    final items = <NoteChecklistItem>[];
+    final lines = content.split('\n');
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      if (line.startsWith('- [ ] ')) {
+        items.add(
+          NoteChecklistItem(
+            lineIndex: i,
+            text: line.substring(6).trim(),
+            isChecked: false,
+          ),
+        );
+      } else if (line.startsWith('- [x] ') || line.startsWith('- [X] ')) {
+        items.add(
+          NoteChecklistItem(
+            lineIndex: i,
+            text: line.substring(6).trim(),
+            isChecked: true,
+          ),
+        );
+      }
+    }
+    return items;
+  }
+
+  /// Toggles a specific checklist line by its line index
+  static void toggleChecklistAtLine(TextEditingController controller, int targetLineIndex) {
+    final lines = controller.text.split('\n');
+    if (targetLineIndex < 0 || targetLineIndex >= lines.length) return;
+
+    final line = lines[targetLineIndex];
+    if (line.startsWith('- [ ] ')) {
+      lines[targetLineIndex] = '- [x] ${line.substring(6)}';
+    } else if (line.startsWith('- [x] ') || line.startsWith('- [X] ')) {
+      lines[targetLineIndex] = '- [ ] ${line.substring(6)}';
+    }
+    final newText = lines.join('\n');
+    controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: controller.selection.isValid ? controller.selection.start.clamp(0, newText.length) : newText.length),
+    );
   }
 
   /// Parses note content for card preview: removes raw asterisks, renders clean checkmarks
@@ -328,6 +409,7 @@ class NoteFormattingHelper {
       final suffix = isLastLine ? '' : '\n';
 
       if (line.startsWith('- [x] ') || line.startsWith('- [X] ')) {
+        final content = line.length >= 6 ? line.substring(6) : '';
         spans.add(
           TextSpan(
             text: '☑ ',
@@ -339,7 +421,7 @@ class NoteFormattingHelper {
         );
         spans.add(
           TextSpan(
-            text: '${line.substring(6)}$suffix',
+            text: '$content$suffix',
             style: baseStyle.copyWith(
               decoration: TextDecoration.lineThrough,
               color: isDark ? Colors.grey.shade500 : Colors.grey.shade400,
@@ -350,6 +432,7 @@ class NoteFormattingHelper {
       }
 
       if (line.startsWith('- [ ] ')) {
+        final content = line.length >= 6 ? line.substring(6) : '';
         spans.add(
           TextSpan(
             text: '☐ ',
@@ -359,7 +442,7 @@ class NoteFormattingHelper {
             ),
           ),
         );
-        _parsePreviewBold(line.substring(6), baseStyle, spans, suffix: suffix);
+        _parsePreviewBold(content, baseStyle, spans, suffix: suffix);
         continue;
       }
 

@@ -105,55 +105,64 @@ class NoteCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              // Footer: Time and Diagonal Arrow (↗)
+              // Footer: Time, Reminder, and Diagonal Arrow (↗)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatTime(note.updatedAt),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
-                        ),
-                      ),
-                      if (note.reminderAt != null) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.25 : 0.16),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                IconlyLight.notification,
-                                size: 10,
-                                color: Color(0xFF8B5CF6),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                _formatReminderBadge(note.reminderAt!),
-                                style: const TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF8B5CF6),
-                                ),
-                              ),
-                            ],
+                  Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _formatTime(note.updatedAt),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
                           ),
                         ),
+                        if (note.reminderAt != null) ...[
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.25 : 0.16),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    IconlyLight.notification,
+                                    size: 9,
+                                    color: Color(0xFF8B5CF6),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Flexible(
+                                    child: Text(
+                                      _formatReminderBadge(note.reminderAt!),
+                                      style: const TextStyle(
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF8B5CF6),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
+                  const SizedBox(width: 4),
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isDark
@@ -163,7 +172,7 @@ class NoteCard extends StatelessWidget {
                     child: Center(
                       child: Icon(
                         Icons.arrow_outward_rounded,
-                        size: 15,
+                        size: 13,
                         color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
