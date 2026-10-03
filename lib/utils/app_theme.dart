@@ -86,6 +86,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       fontFamily: fontFamily,
+      fontFamilyFallback: const [fontFamily, 'sans-serif'],
       scaffoldBackgroundColor: lightBg,
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
@@ -104,6 +105,8 @@ class AppTheme {
       textTheme: _buildTextTheme(
         primaryColor: lightTextPrimary,
         secondaryColor: lightTextSecondary,
+      ).apply(
+        fontFamily: fontFamily,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -140,6 +143,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       fontFamily: fontFamily,
+      fontFamilyFallback: const [fontFamily, 'sans-serif'],
       scaffoldBackgroundColor: darkBg,
       colorScheme: const ColorScheme(
         brightness: Brightness.dark,
@@ -158,6 +162,8 @@ class AppTheme {
       textTheme: _buildTextTheme(
         primaryColor: darkTextPrimary,
         secondaryColor: darkTextSecondary,
+      ).apply(
+        fontFamily: fontFamily,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,

@@ -17,12 +17,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int _currentIndex = 0;
 
   final List<LiquidNavItem> _navItems = [
-    LiquidNavItem(
-      builder: (context, isSelected, color) => TargetArrowIcon(
-        color: color,
-        isSelected: isSelected,
-      ),
-      label: 'Habits',
+    const LiquidNavItem(
+      icon: IconlyLight.home,
+      activeIcon: IconlyBold.home,
+      label: 'Home',
     ),
     const LiquidNavItem(
       icon: IconlyLight.timeCircle,
@@ -67,6 +65,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       extendBody: true,
@@ -85,8 +84,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   icon: const Icon(IconlyLight.setting, size: 22),
                   onPressed: () => _showSettingsSheet(context),
                   tooltip: 'Settings & Theme',
+                  style: IconButton.styleFrom(
+                    backgroundColor: isDark
+                        ? const Color(0xFF1E1F25)
+                        : const Color(0xFFEEEEEE),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 14),
               ],
             ),
       body: IndexedStack(

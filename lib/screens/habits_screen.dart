@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/habit.dart';
 import 'package:orbit/services/habit_provider.dart';
-import 'package:orbit/widgets/add_habit_sheet.dart';
 import 'package:orbit/widgets/daily_pulse_row.dart';
 import 'package:orbit/widgets/habit_item_card.dart';
 import 'package:orbit/widgets/streak_hero_card.dart';
@@ -16,15 +16,6 @@ class HabitsScreen extends ConsumerWidget {
     this.onNavigateTab,
     this.onSettingsTap,
   });
-
-  void _showAddHabit(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const AddHabitSheet(),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,43 +64,22 @@ class HabitsScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      // Top Action Buttons
-                      Row(
-                        children: [
-                          IconButton.filledTonal(
-                            onPressed: () => _showAddHabit(context),
-                            style: IconButton.styleFrom(
-                              backgroundColor: isDark
-                                  ? const Color(0xFF222329)
-                                  : const Color(0xFFEAEAE4),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            icon: Icon(
-                              Icons.add_rounded,
-                              color: theme.colorScheme.onSurface,
-                              size: 20,
-                            ),
+                      // Top Settings Button (Consistent across app)
+                      IconButton(
+                        onPressed: onSettingsTap,
+                        tooltip: 'Settings & Theme',
+                        style: IconButton.styleFrom(
+                          backgroundColor: isDark
+                              ? const Color(0xFF1E1F25)
+                              : const Color(0xFFEEEEEE),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          const SizedBox(width: 8),
-                          IconButton.filledTonal(
-                            onPressed: onSettingsTap,
-                            style: IconButton.styleFrom(
-                              backgroundColor: isDark
-                                  ? const Color(0xFF222329)
-                                  : const Color(0xFFEAEAE4),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            icon: Icon(
-                              Icons.tune_rounded,
-                              color: theme.colorScheme.onSurface,
-                              size: 18,
-                            ),
-                          ),
-                        ],
+                        ),
+                        icon: const Icon(
+                          IconlyLight.setting,
+                          size: 22,
+                        ),
                       ),
                     ],
                   ),
