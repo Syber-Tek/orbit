@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/screens/habits_screen.dart';
+import 'package:orbit/screens/tasks_screen.dart';
 import 'package:orbit/utils/theme_provider.dart';
 import 'package:orbit/widgets/add_habit_sheet.dart';
+import 'package:orbit/widgets/add_task_sheet.dart';
 import 'package:orbit/widgets/liquid_glass_nav_bar.dart';
 import 'package:orbit/widgets/note_editor_sheet.dart';
 
@@ -58,6 +60,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
+  void _showAddTask(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddTaskSheet(),
+    );
+  }
+
   void _showAddNote(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -108,10 +119,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             onNavigateTab: (index) => setState(() => _currentIndex = index),
             onSettingsTap: () => _showSettingsSheet(context),
           ),
-          const _PlaceholderTabView(
-            title: 'Tasks',
-            subtitle: 'Tasks, scheduled reminders & timed alarms',
-            icon: IconlyLight.timeCircle,
+          TasksScreen(
+            onSettingsTap: () => _showSettingsSheet(context),
           ),
           const _PlaceholderTabView(
             title: 'Screen Time',
@@ -137,9 +146,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         onAddExpense: () {
           // TODO: Open add expense modal
         },
-        onAddTodo: () {
-          // TODO: Open add todo modal
-        },
+        onAddTodo: () => _showAddTask(context),
         onAddNote: () => _showAddNote(context),
       ),
     );
@@ -345,7 +352,7 @@ class _PlaceholderTabView extends StatelessWidget {
               height: 72,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: theme.colorScheme.outline),
               ),
               child: Center(
