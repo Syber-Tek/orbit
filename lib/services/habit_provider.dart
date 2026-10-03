@@ -14,17 +14,17 @@ class HabitListNotifier extends Notifier<List<Habit>> {
     return [
       Habit(
         id: '1',
-        title: 'Morning Meditation',
-        category: 'Mindfulness',
-        iconCodePoint: Icons.self_improvement_rounded.codePoint,
-        colorValue: 0xFF10B981, // Emerald
-        targetCount: 15,
-        currentCount: 15,
+        title: 'Daily Workout',
+        category: 'Fitness',
+        iconCodePoint: Icons.fitness_center_rounded.codePoint,
+        colorValue: 0xFFEC4899, // Pink / Coral
+        targetCount: 45,
+        currentCount: 45,
         unit: 'mins',
-        streak: 14,
+        streak: 12,
         timeOfDay: HabitTimeOfDay.morning,
         completedDates: [threeDaysAgo, twoDaysAgo, yesterday, today],
-        createdAt: now.subtract(const Duration(days: 14)),
+        createdAt: now.subtract(const Duration(days: 12)),
       ),
       Habit(
         id: '2',
@@ -33,40 +33,12 @@ class HabitListNotifier extends Notifier<List<Habit>> {
         iconCodePoint: Icons.water_drop_rounded.codePoint,
         colorValue: 0xFF3B82F6, // Blue
         targetCount: 2500,
-        currentCount: 2000,
+        currentCount: 1500,
         unit: 'ml',
         streak: 9,
         timeOfDay: HabitTimeOfDay.anytime,
         completedDates: [threeDaysAgo, twoDaysAgo, yesterday],
         createdAt: now.subtract(const Duration(days: 9)),
-      ),
-      Habit(
-        id: '3',
-        title: 'Read 20 Pages',
-        category: 'Growth',
-        iconCodePoint: Icons.menu_book_rounded.codePoint,
-        colorValue: 0xFFF59E0B, // Amber
-        targetCount: 20,
-        currentCount: 20,
-        unit: 'pages',
-        streak: 12,
-        timeOfDay: HabitTimeOfDay.evening,
-        completedDates: [threeDaysAgo, twoDaysAgo, yesterday, today],
-        createdAt: now.subtract(const Duration(days: 12)),
-      ),
-      Habit(
-        id: '4',
-        title: 'Daily Workout',
-        category: 'Fitness',
-        iconCodePoint: Icons.fitness_center_rounded.codePoint,
-        colorValue: 0xFFEC4899, // Pink
-        targetCount: 45,
-        currentCount: 0,
-        unit: 'mins',
-        streak: 6,
-        timeOfDay: HabitTimeOfDay.afternoon,
-        completedDates: [threeDaysAgo, twoDaysAgo, yesterday],
-        createdAt: now.subtract(const Duration(days: 6)),
       ),
     ];
   }

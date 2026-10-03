@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/note.dart';
 import 'package:orbit/services/note_provider.dart';
+import 'package:orbit/utils/note_markdown_helper.dart';
 
 class NoteEditorSheet extends ConsumerStatefulWidget {
   final Note? initialNote;
@@ -18,8 +20,9 @@ class NoteEditorSheet extends ConsumerStatefulWidget {
 
 class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
   late final TextEditingController _titleController;
-  late final TextEditingController _contentController;
+  late final NoteEditingController _contentController;
   late int _selectedColor;
+  DateTime? _reminderAt;
 
   final List<int> _availableColors = const [
     0xFFE9D8FD, // Lilac
@@ -34,15 +37,78 @@ class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.initialNote?.title ?? '');
-    _contentController = TextEditingController(text: widget.initialNote?.content ?? '');
+    _contentController = NoteEditingController(text: widget.initialNote?.content ?? '');
     _selectedColor = widget.initialNote?.colorValue ?? _availableColors.first;
+    _reminderAt = widget.initialNote?.reminderAt;
+    _contentController.addListener(_onContentChanged);
+  }
+
+  void _onContentChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _contentController.removeListener(_onContentChanged);
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickReminder() async {
+    HapticFeedback.selectionClick();
+    final now = DateTime.now();
+    final initial = _reminderAt ?? now;
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initial.isBefore(now) ? now : initial,
+      firstDate: now.subtract(const Duration(days: 1)),
+      lastDate: now.add(const Duration(days: 3650)),
+    );
+
+    if (pickedDate == null || !mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+
+    if (pickedTime == null || !mounted) return;
+
+    setState(() {
+      _reminderAt = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+    });
+  }
+
+  void _clearReminder() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _reminderAt = null;
+    });
+  }
+
+  String _formatReminder(DateTime dt) {
+    final now = DateTime.now();
+    final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    final tomorrow = now.add(const Duration(days: 1));
+    final isTomorrow = dt.year == tomorrow.year && dt.month == tomorrow.month && dt.day == tomorrow.day;
+
+    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final timeStr = '$hour:$minute $period';
+
+    if (isToday) return 'Today, $timeStr';
+    if (isTomorrow) return 'Tomorrow, $timeStr';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[dt.month - 1]} ${dt.day}, $timeStr';
   }
 
   void _saveNote() {
@@ -57,6 +123,8 @@ class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
         content: content,
         colorValue: _selectedColor,
         updatedAt: DateTime.now(),
+        reminderAt: _reminderAt,
+        clearReminder: _reminderAt == null,
       );
       ref.read(noteListProvider.notifier).updateNote(updated);
     } else {
@@ -66,6 +134,7 @@ class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
         content: content,
         colorValue: _selectedColor,
         updatedAt: DateTime.now(),
+        reminderAt: _reminderAt,
       );
       ref.read(noteListProvider.notifier).addNote(newNote);
     }
@@ -192,13 +261,14 @@ class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
             // Content Field
             TextField(
               controller: _contentController,
-              maxLines: 5,
-              minLines: 3,
+              maxLines: 6,
+              minLines: 4,
+              inputFormatters: [NoteListInputFormatter()],
               style: theme.textTheme.bodyLarge?.copyWith(
                 height: 1.45,
               ),
               decoration: InputDecoration(
-                hintText: 'Start typing thoughts, tasks, or reminders...',
+                hintText: 'Start typing thoughts, tasks, or lists...',
                 hintStyle: TextStyle(
                   color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                   fontSize: 14,
@@ -206,6 +276,255 @@ class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
+            ),
+            const SizedBox(height: 12),
+
+            // Formatting & Reminder Accessory Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF18191E) : const Color(0xFFF4F4F1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Bold (B)
+                  _buildFormatButton(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      NoteFormattingHelper.toggleBold(_contentController);
+                    },
+                    tooltip: 'Bold (**bold**)',
+                    child: const Text(
+                      'B',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Numbered List (1.)
+                  _buildFormatButton(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      NoteFormattingHelper.toggleNumberedList(_contentController);
+                    },
+                    tooltip: 'Numbered List (1.)',
+                    child: const Text(
+                      '1.',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Checklist (☑)
+                  _buildFormatButton(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      NoteFormattingHelper.toggleChecklist(_contentController);
+                    },
+                    tooltip: 'Checklist (- [ ])',
+                    child: const Icon(
+                      Icons.check_box_outlined,
+                      size: 19,
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 1,
+                    height: 20,
+                    color: isDark ? Colors.white12 : Colors.black12,
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Reminder Badge or Button
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: _reminderAt == null
+                          ? InkWell(
+                              onTap: _pickReminder,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : Colors.black.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      IconlyLight.notification,
+                                      size: 15,
+                                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      'Reminder',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : Container(
+                              padding: const EdgeInsets.only(left: 10, right: 4, top: 4, bottom: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.22 : 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GestureDetector(
+                                    onTap: _pickReminder,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          IconlyLight.notification,
+                                          size: 14,
+                                          color: Color(0xFF8B5CF6),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          _formatReminder(_reminderAt!),
+                                          style: const TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF8B5CF6),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  GestureDetector(
+                                    onTap: _clearReminder,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(3.0),
+                                      child: Icon(
+                                        Icons.close_rounded,
+                                        size: 14,
+                                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Interactive Checklist Section (rendered if content contains checklist items)
+            Builder(
+              builder: (context) {
+                final checklistItems = NoteFormattingHelper.getChecklistItems(_contentController.text);
+                if (checklistItems.isEmpty) return const SizedBox.shrink();
+
+                final doneCount = checklistItems.where((i) => i.isChecked).length;
+
+                return Container(
+                  margin: const EdgeInsets.only(top: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF16171D) : const Color(0xFFF3F3F0),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF282933) : const Color(0xFFE2E2DC),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'CHECKLIST ($doneCount/${checklistItems.length})',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            'Tap box to check / uncheck',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...checklistItems.map((item) {
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              NoteFormattingHelper.toggleChecklistAtLine(_contentController, item.lineIndex);
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    item.isChecked
+                                        ? Icons.check_box_rounded
+                                        : Icons.check_box_outline_blank_rounded,
+                                    size: 19,
+                                    color: item.isChecked
+                                        ? const Color(0xFF10B981)
+                                        : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      item.text.isEmpty ? '(Empty task)' : item.text,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        decoration: item.isChecked ? TextDecoration.lineThrough : null,
+                                        color: item.isChecked
+                                            ? (isDark ? Colors.grey.shade500 : Colors.grey.shade400)
+                                            : (isDark ? const Color(0xFFEDEDEA) : const Color(0xFF18181B)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
 
@@ -230,6 +549,35 @@ class _NoteEditorSheetState extends ConsumerState<NoteEditorSheet> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormatButton({
+    required VoidCallback onTap,
+    required Widget child,
+    required String tooltip,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(child: child),
+          ),
         ),
       ),
     );

@@ -295,7 +295,7 @@ class HabitsScreen extends ConsumerWidget {
                         children: [
                           Expanded(
                             child: SizedBox(
-                              height: 140,
+                              height: 150,
                               child: NoteCard(note: topNotes[0]),
                             ),
                           ),
@@ -303,7 +303,7 @@ class HabitsScreen extends ConsumerWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: SizedBox(
-                                height: 140,
+                                height: 150,
                                 child: NoteCard(note: topNotes[1]),
                               ),
                             ),

@@ -4,6 +4,7 @@ class Note {
   final String content;
   final int colorValue;
   final DateTime updatedAt;
+  final DateTime? reminderAt;
   final bool isPinned;
 
   const Note({
@@ -12,6 +13,7 @@ class Note {
     required this.content,
     required this.colorValue,
     required this.updatedAt,
+    this.reminderAt,
     this.isPinned = false,
   });
 
@@ -21,6 +23,8 @@ class Note {
     String? content,
     int? colorValue,
     DateTime? updatedAt,
+    DateTime? reminderAt,
+    bool? clearReminder,
     bool? isPinned,
   }) {
     return Note(
@@ -29,6 +33,7 @@ class Note {
       content: content ?? this.content,
       colorValue: colorValue ?? this.colorValue,
       updatedAt: updatedAt ?? this.updatedAt,
+      reminderAt: clearReminder == true ? null : (reminderAt ?? this.reminderAt),
       isPinned: isPinned ?? this.isPinned,
     );
   }
@@ -40,6 +45,7 @@ class Note {
       'content': content,
       'colorValue': colorValue,
       'updatedAt': updatedAt.toIso8601String(),
+      'reminderAt': reminderAt?.toIso8601String(),
       'isPinned': isPinned,
     };
   }
@@ -51,6 +57,9 @@ class Note {
       content: json['content'] as String,
       colorValue: json['colorValue'] as int,
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      reminderAt: json['reminderAt'] != null
+          ? DateTime.parse(json['reminderAt'] as String)
+          : null,
       isPinned: json['isPinned'] as bool? ?? false,
     );
   }
