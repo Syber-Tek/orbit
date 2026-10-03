@@ -39,7 +39,7 @@ class NoteCard extends StatelessWidget {
         onTap: () => _openNote(context),
         borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: isDark
                 ? cardColor.withValues(alpha: 0.12)
@@ -56,36 +56,41 @@ class NoteCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    note.title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? const Color(0xFFEDEDEA) : const Color(0xFF18181B),
-                      letterSpacing: -0.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (note.content.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
-                      note.content,
+                      note.title,
                       style: TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: isDark ? Colors.grey.shade400 : Colors.black87.withValues(alpha: 0.75),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? const Color(0xFFEDEDEA) : const Color(0xFF18181B),
+                        letterSpacing: -0.2,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (note.content.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Flexible(
+                        child: Text(
+                          note.content,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            height: 1.3,
+                            color: isDark ? Colors.grey.shade400 : Colors.black87.withValues(alpha: 0.75),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               // Footer: Time and Diagonal Arrow (↗)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
