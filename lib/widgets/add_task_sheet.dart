@@ -272,84 +272,107 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
             const SizedBox(height: 8),
             Row(
               children: [
-                // Time Picker Button
-                InkWell(
-                  onTap: _pickTime,
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.06)
-                          : Colors.black.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(IconlyLight.timeCircle, size: 16),
-                        const SizedBox(width: 6),
-                        Text(
-                          _selectedTime != null ? _formatTime(_selectedTime!) : 'Set Time',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Alarm Toggle
+                // Custom Time Button
                 Expanded(
                   child: InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _hasAlarm = !_hasAlarm);
-                    },
+                    onTap: _pickTime,
                     borderRadius: BorderRadius.circular(14),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: _hasAlarm
-                            ? const Color(0xFFFF6B2B).withValues(alpha: isDark ? 0.2 : 0.12)
-                            : (isDark
-                                ? Colors.white.withValues(alpha: 0.04)
-                                : Colors.black.withValues(alpha: 0.03)),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: _hasAlarm
-                              ? const Color(0xFFFF6B2B).withValues(alpha: 0.5)
-                              : (isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF)),
+                          color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
                         ),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            _hasAlarm ? IconlyBold.notification : IconlyLight.notification,
-                            size: 16,
+                            IconlyLight.timeCircle,
+                            size: 18,
+                            color: isDark ? Colors.grey.shade300 : Colors.black87,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _selectedTime != null ? _formatTime(_selectedTime!) : 'No Time Set',
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  'Tap to customize',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 14,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // Alarm Toggle
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _hasAlarm = !_hasAlarm);
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _hasAlarm
+                          ? const Color(0xFFFF6B2B).withValues(alpha: isDark ? 0.22 : 0.14)
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.04)
+                              : Colors.black.withValues(alpha: 0.03)),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _hasAlarm
+                            ? const Color(0xFFFF6B2B).withValues(alpha: 0.5)
+                            : (isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF)),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _hasAlarm ? IconlyBold.notification : IconlyLight.notification,
+                          size: 17,
+                          color: _hasAlarm
+                              ? const Color(0xFFFF6B2B)
+                              : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _hasAlarm ? 'Alarm On' : 'Alarm Off',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
                             color: _hasAlarm
                                 ? const Color(0xFFFF6B2B)
                                 : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _hasAlarm ? 'Alarm On' : 'Alarm Off',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: _hasAlarm
-                                  ? const Color(0xFFFF6B2B)
-                                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

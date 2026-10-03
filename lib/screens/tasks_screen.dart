@@ -28,14 +28,6 @@ class TasksScreen extends ConsumerWidget {
     );
   }
 
-  String _formatHeaderDate(DateTime dt) {
-    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final weekday = weekdays[dt.weekday - 1];
-    final month = months[dt.month - 1];
-    return '$weekday, $month ${dt.day}';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -52,89 +44,18 @@ class TasksScreen extends ConsumerWidget {
     // Anchor week around selected date or current week
     final weekStart = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // Top App Bar
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Tasks',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.6,
-                            fontSize: 28,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _formatHeaderDate(selectedDate),
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        // Add Task Button
-                        IconButton(
-                          onPressed: () => _openAddTask(context, defaultDate: selectedDate),
-                          icon: const Icon(Icons.add_rounded, size: 22),
-                          tooltip: 'Add Task',
-                          style: IconButton.styleFrom(
-                            backgroundColor: isDark
-                                ? const Color(0xFF1E1F25)
-                                : const Color(0xFFEEEEEE),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Settings Button
-                        if (onSettingsTap != null)
-                          IconButton(
-                            onPressed: onSettingsTap,
-                            icon: const Icon(IconlyLight.setting, size: 20),
-                            tooltip: 'Settings',
-                            style: IconButton.styleFrom(
-                              backgroundColor: isDark
-                                  ? const Color(0xFF1E1F25)
-                                  : const Color(0xFFEEEEEE),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Daily Progress Overview Bento Card (Image 1 & 3 inspired)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        // Daily Progress Overview Bento Card (Image 1 & 3 inspired)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
                 child: Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF18191E) : Colors.white,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
                       width: 1.2,
@@ -151,55 +72,27 @@ class TasksScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      // Progress Ring / Arc
-                      SizedBox(
-                        width: 62,
-                        height: 62,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              value: stats.rate,
-                              strokeWidth: 6,
-                              backgroundColor: isDark
-                                  ? const Color(0xFF272830)
-                                  : const Color(0xFFE5E5DF),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isDark ? Colors.white : const Color(0xFF18181B),
-                              ),
-                            ),
-                            Text(
-                              '${(stats.rate * 100).toInt()}%',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 18),
-
                       // Text and Alarm stats
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Daily Goal',
+                              'DAILY GOAL',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
+                                letterSpacing: 0.8,
                                 color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
-                              '${stats.completed}/${stats.total} tasks completed',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                              '${stats.completed}/${stats.total} tasks done',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 19,
+                                letterSpacing: -0.4,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -212,20 +105,51 @@ class TasksScreen extends ConsumerWidget {
                                       ? const Color(0xFFFF6B2B)
                                       : (isDark ? Colors.grey.shade500 : Colors.grey.shade400),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 5),
                                 Text(
                                   stats.alarmsActive > 0
-                                      ? '${stats.alarmsActive} active alarms today'
-                                      : 'No pending alarms',
+                                      ? '${stats.alarmsActive} active alarms'
+                                      : 'No active alarms',
                                   style: TextStyle(
-                                    fontSize: 11.5,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                     color: stats.alarmsActive > 0
                                         ? const Color(0xFFFF6B2B)
-                                        : (isDark ? Colors.grey.shade500 : Colors.grey.shade500),
+                                        : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                                   ),
                                 ),
                               ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+
+                      // Large Circular Progress Dial (Ref Image 1)
+                      SizedBox(
+                        width: 76,
+                        height: 76,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              value: stats.rate,
+                              strokeWidth: 8,
+                              strokeCap: StrokeCap.round,
+                              backgroundColor: isDark
+                                  ? const Color(0xFF272830)
+                                  : const Color(0xFFE5E5DF),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isDark ? Colors.white : const Color(0xFF18181B),
+                              ),
+                            ),
+                            Text(
+                              '${(stats.rate * 100).toInt()}%',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                              ),
                             ),
                           ],
                         ),
@@ -244,7 +168,7 @@ class TasksScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF141519) : const Color(0xFFF6F6F2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDark ? const Color(0xFF222329) : const Color(0xFFE8E8E2),
                     ),
@@ -384,7 +308,7 @@ class TasksScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF18191E) : Colors.white,
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
                       ),
@@ -454,9 +378,7 @@ class TasksScreen extends ConsumerWidget {
               child: SizedBox(height: 110),
             ),
           ],
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildFilterChip({

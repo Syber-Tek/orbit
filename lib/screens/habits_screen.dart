@@ -277,7 +277,7 @@ class HabitsScreen extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(vertical: 24),
                           decoration: BoxDecoration(
                             color: isDark ? const Color(0xFF18191E) : Colors.white,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
                             ),

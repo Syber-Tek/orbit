@@ -23,7 +23,7 @@ class StreakHeroCard extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF18191E) : Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
           width: 1.2,
@@ -80,7 +80,7 @@ class StreakHeroCard extends ConsumerWidget {
               color: isDark
                   ? const Color(0xFF131417)
                   : const Color(0xFFF4F4F0),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,

@@ -43,7 +43,7 @@ class TaskItemCard extends StatelessWidget {
         alignment: Alignment.centerRight,
         decoration: BoxDecoration(
           color: const Color(0xFFEF4444).withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
       ),
@@ -57,7 +57,7 @@ class TaskItemCard extends StatelessWidget {
                   ? const Color(0xFF16171B).withValues(alpha: 0.7)
                   : const Color(0xFFF6F6F2))
               : (isDark ? const Color(0xFF18191E) : Colors.white),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDone
                 ? (isDark ? const Color(0xFF222329) : const Color(0xFFE8E8E2))
@@ -78,7 +78,7 @@ class TaskItemCard extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onEdit,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [

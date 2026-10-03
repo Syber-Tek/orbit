@@ -29,7 +29,7 @@ class HabitItemCard extends StatelessWidget {
                 ? const Color(0xFF16171B).withValues(alpha: 0.7)
                 : const Color(0xFFF6F6F2))
             : (isDark ? const Color(0xFF18191E) : Colors.white),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDone
               ? (isDark ? const Color(0xFF222329) : const Color(0xFFE8E8E2))
@@ -56,7 +56,7 @@ class HabitItemCard extends StatelessWidget {
             height: 46,
             decoration: BoxDecoration(
               color: accentColor.withValues(alpha: isDone ? 0.08 : 0.16),
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Center(
               child: Icon(

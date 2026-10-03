@@ -85,7 +85,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     return Scaffold(
       extendBody: true,
-      appBar: (_currentIndex == 0 || _currentIndex == 1)
+      appBar: _currentIndex == 0
           ? null
           : AppBar(
               title: Text(
@@ -352,7 +352,7 @@ class _PlaceholderTabView extends StatelessWidget {
               height: 72,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: theme.colorScheme.outline),
               ),
               child: Center(

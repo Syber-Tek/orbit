@@ -46,14 +46,14 @@ class NoteCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openNote(context),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: isDark
                 ? cardColor.withValues(alpha: 0.12)
                 : cardColor.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark
                   ? cardColor.withValues(alpha: 0.28)
