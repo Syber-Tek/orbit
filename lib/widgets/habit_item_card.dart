@@ -145,15 +145,8 @@ class HabitItemCard extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: isDone
-                    ? const LinearGradient(
-                        colors: [Color(0xFF10B981), Color(0xFF059669)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
                 color: isDone
-                    ? null
+                    ? (isDark ? Colors.white : const Color(0xFF18181B))
                     : (isDark
                         ? Colors.white.withValues(alpha: 0.06)
                         : Colors.black.withValues(alpha: 0.04)),
@@ -168,9 +161,11 @@ class HabitItemCard extends StatelessWidget {
                 boxShadow: isDone
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.2)
+                              : Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ]
                     : [],
@@ -179,9 +174,9 @@ class HabitItemCard extends StatelessWidget {
                 child: AnimatedScale(
                   scale: isDone ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 180),
-                  child: const Icon(
+                  child: Icon(
                     Icons.check_rounded,
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF141517) : Colors.white,
                     size: 20,
                   ),
                 ),

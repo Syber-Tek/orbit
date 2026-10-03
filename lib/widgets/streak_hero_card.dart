@@ -41,57 +41,13 @@ class StreakHeroCard extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Glowing Flame + Streak Counter
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // Radial Ambient Glow
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFFFF6B2B).withValues(alpha: isDark ? 0.35 : 0.22),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-              // Flame Icon Container
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFFF8533),
-                      Color(0xFFFF4800),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFF5500).withValues(alpha: 0.38),
-                      blurRadius: 18,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.local_fire_department_rounded,
-                    color: Colors.white,
-                    size: 34,
-                  ),
-                ),
-              ),
-            ],
+          // Clean Fire Icon (no circle container)
+          const Icon(
+            Icons.local_fire_department_rounded,
+            color: Color(0xFFFF5500),
+            size: 48,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           // Large Bold Streak Number
           Text(
             '$maxStreak',
@@ -201,7 +157,9 @@ class StreakHeroCard extends ConsumerWidget {
               backgroundColor: isDark
                   ? const Color(0xFF272830)
                   : const Color(0xFFE4E4DE),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isDark ? Colors.white : const Color(0xFF18181B),
+              ),
             ),
           ),
         ],
@@ -221,23 +179,21 @@ class StreakHeroCard extends ConsumerWidget {
         height: 32,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [Color(0xFF10B981), Color(0xFF059669)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: isDark ? Colors.white : const Color(0xFF18181B),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF10B981).withValues(alpha: 0.35),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.15)
+                  : Colors.black.withValues(alpha: 0.1),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: const Center(
+        child: Center(
           child: Icon(
             Icons.check_rounded,
-            color: Colors.white,
+            color: isDark ? const Color(0xFF141517) : Colors.white,
             size: 18,
           ),
         ),
