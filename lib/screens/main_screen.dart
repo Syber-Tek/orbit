@@ -5,6 +5,9 @@ import 'package:orbit/screens/habits_screen.dart';
 import 'package:orbit/screens/ledger_screen.dart';
 import 'package:orbit/screens/screen_time_screen.dart';
 import 'package:orbit/screens/tasks_screen.dart';
+import 'package:orbit/services/nav_bar_settings_provider.dart';
+import 'package:orbit/services/notification_settings_provider.dart';
+import 'package:orbit/utils/app_haptics.dart';
 import 'package:orbit/utils/theme_provider.dart';
 import 'package:orbit/widgets/add_habit_sheet.dart';
 import 'package:orbit/widgets/add_task_sheet.dart';
@@ -101,6 +104,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final navBarOpacity = ref.watch(navBarOpacityProvider);
 
     return Scaffold(
       extendBody: true,
@@ -163,6 +167,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       ),
       bottomNavigationBar: LiquidGlassNavBar(
         currentIndex: _currentIndex,
+        opacity: navBarOpacity,
         onTap: (index) {
           _pageController.animateToPage(
             index,
@@ -187,6 +192,9 @@ class _SettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeProvider);
+    final navBarOpacity = ref.watch(navBarOpacityProvider);
+    final hapticsEnabled = ref.watch(hapticsEnabledProvider);
+    final notifSettings = ref.watch(notificationSettingsProvider);
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -200,98 +208,360 @@ class _SettingsSheet extends ConsumerWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: theme.colorScheme.outline),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Settings & Preferences',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20),
-                onPressed: () => Navigator.pop(context),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Settings & Preferences',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // --- 1. Appearance Section ---
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.colorScheme.outline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.palette_outlined,
+                          size: 20,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Appearance',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _buildThemeOption(
+                          context: context,
+                          ref: ref,
+                          mode: ThemeMode.light,
+                          label: 'Light',
+                          icon: Icons.light_mode_outlined,
+                          selected: themeMode == ThemeMode.light,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeOption(
+                          context: context,
+                          ref: ref,
+                          mode: ThemeMode.dark,
+                          label: 'Dark',
+                          icon: Icons.dark_mode_outlined,
+                          selected: themeMode == ThemeMode.dark,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeOption(
+                          context: context,
+                          ref: ref,
+                          mode: ThemeMode.system,
+                          label: 'Auto',
+                          icon: Icons.brightness_auto_outlined,
+                          selected: themeMode == ThemeMode.system,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              // --- 2. Navigation Bar Transparency Section ---
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.colorScheme.outline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.view_compact_rounded,
+                              size: 20,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Nav Bar Transparency',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${(navBarOpacity * 100).toInt()}% Opacity',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Control the frosted glass translucency of the bottom navigation bar.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        activeTrackColor: theme.colorScheme.primary,
+                        inactiveTrackColor: theme.colorScheme.outlineVariant,
+                        thumbColor: theme.colorScheme.primary,
+                        overlayColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                        trackHeight: 4,
+                      ),
+                      child: Slider(
+                        value: navBarOpacity,
+                        min: 0.20,
+                        max: 1.0,
+                        divisions: 16,
+                        label: '${(navBarOpacity * 100).toInt()}%',
+                        onChanged: (val) {
+                          ref.read(navBarOpacityProvider.notifier).setOpacity(val);
+                        },
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        _buildOpacityPreset(
+                          context: context,
+                          ref: ref,
+                          label: 'Glass 40%',
+                          targetValue: 0.40,
+                          currentValue: navBarOpacity,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildOpacityPreset(
+                          context: context,
+                          ref: ref,
+                          label: 'Frosted 70%',
+                          targetValue: 0.70,
+                          currentValue: navBarOpacity,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildOpacityPreset(
+                          context: context,
+                          ref: ref,
+                          label: 'Solid 100%',
+                          targetValue: 1.0,
+                          currentValue: navBarOpacity,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              // --- 3. Vibration & Haptics Section ---
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.colorScheme.outline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.vibration_rounded,
+                          size: 20,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Vibration & Haptics',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Touch Haptic Feedback',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Vibrate on nav taps and button interactions',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: hapticsEnabled,
+                          activeTrackColor: theme.colorScheme.primary,
+                          onChanged: (val) {
+                            ref.read(hapticsEnabledProvider.notifier).setEnabled(val);
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Alarm & Reminder Vibration',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Vibrate when alarms and reminders trigger',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: notifSettings.vibrationEnabled,
+                          activeTrackColor: theme.colorScheme.primary,
+                          onChanged: (val) {
+                            ref
+                                .read(notificationSettingsProvider.notifier)
+                                .setVibrationEnabled(val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.outline),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.palette_outlined,
-                      size: 20,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Appearance',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    _buildThemeOption(
-                      context: context,
-                      ref: ref,
-                      mode: ThemeMode.light,
-                      label: 'Light',
-                      icon: Icons.light_mode_outlined,
-                      selected: themeMode == ThemeMode.light,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildThemeOption(
-                      context: context,
-                      ref: ref,
-                      mode: ThemeMode.dark,
-                      label: 'Dark',
-                      icon: Icons.dark_mode_outlined,
-                      selected: themeMode == ThemeMode.dark,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildThemeOption(
-                      context: context,
-                      ref: ref,
-                      mode: ThemeMode.system,
-                      label: 'Auto',
-                      icon: Icons.brightness_auto_outlined,
-                      selected: themeMode == ThemeMode.system,
-                    ),
-                  ],
-                ),
-              ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOpacityPreset({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String label,
+    required double targetValue,
+    required double currentValue,
+  }) {
+    final theme = Theme.of(context);
+    final isSelected = (currentValue - targetValue).abs() < 0.05;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          AppHaptics.selectionClick();
+          ref.read(navBarOpacityProvider.notifier).setOpacity(targetValue);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? theme.colorScheme.primary.withValues(alpha: 0.16)
+                : theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline,
             ),
           ),
-        ],
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -309,6 +579,7 @@ class _SettingsSheet extends ConsumerWidget {
     return Expanded(
       child: GestureDetector(
         onTap: () {
+          AppHaptics.selectionClick();
           ref.read(themeModeProvider.notifier).setThemeMode(mode);
         },
         child: AnimatedContainer(

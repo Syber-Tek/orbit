@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:orbit/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/screen_time.dart';
@@ -49,7 +49,7 @@ class _ScreenTimeScreenState extends ConsumerState<ScreenTimeScreen>
   }
 
   void _openAddCustomApp(BuildContext context) {
-    HapticFeedback.lightImpact();
+    AppHaptics.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -59,7 +59,7 @@ class _ScreenTimeScreenState extends ConsumerState<ScreenTimeScreen>
   }
 
   void _openSetLimit(BuildContext context, AppUsageItem app) {
-    HapticFeedback.lightImpact();
+    AppHaptics.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -69,7 +69,7 @@ class _ScreenTimeScreenState extends ConsumerState<ScreenTimeScreen>
   }
 
   void _openLockoutSheet(BuildContext context, AppUsageItem app) {
-    HapticFeedback.heavyImpact();
+    AppHaptics.heavyImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

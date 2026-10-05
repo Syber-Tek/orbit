@@ -25,6 +25,8 @@ class PersistenceService {
   static const _kDailyBudgetKey = 'orbit.daily_budget.v1';
   static const _kNotesKey = 'orbit.notes.v1';
   static const _kNativeAppLimitsKey = 'app_limits_json';
+  static const _kNavBarOpacityKey = 'orbit.nav_bar_opacity.v1';
+  static const _kHapticsEnabledKey = 'orbit.haptics_enabled.v1';
 
   SharedPreferences? _prefs;
 
@@ -235,5 +237,25 @@ class PersistenceService {
     } catch (error) {
       debugPrint('Failed to sync limits to native mirror: $error');
     }
+  }
+
+  // --- UI Settings ---
+
+  double loadNavBarOpacity() {
+    return _prefs?.getDouble(_kNavBarOpacityKey) ?? 0.70;
+  }
+
+  Future<void> saveNavBarOpacity(double opacity) async {
+    final p = _prefs ?? await init();
+    await p.setDouble(_kNavBarOpacityKey, opacity);
+  }
+
+  bool loadHapticsEnabled() {
+    return _prefs?.getBool(_kHapticsEnabledKey) ?? true;
+  }
+
+  Future<void> saveHapticsEnabled(bool enabled) async {
+    final p = _prefs ?? await init();
+    await p.setBool(_kHapticsEnabledKey, enabled);
   }
 }

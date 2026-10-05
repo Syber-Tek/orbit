@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:orbit/utils/app_haptics.dart';
 
 typedef NavItemWidgetBuilder = Widget Function(
   BuildContext context,
@@ -102,6 +102,7 @@ class LiquidGlassNavBar extends StatelessWidget {
   final VoidCallback? onAddExpense;
   final VoidCallback? onAddTodo;
   final VoidCallback? onAddNote;
+  final double opacity;
 
   const LiquidGlassNavBar({
     super.key,
@@ -112,10 +113,11 @@ class LiquidGlassNavBar extends StatelessWidget {
     this.onAddExpense,
     this.onAddTodo,
     this.onAddNote,
+    this.opacity = 0.70,
   });
 
   void _showQuickActionSheet(BuildContext context) {
-    HapticFeedback.mediumImpact();
+    AppHaptics.mediumImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
@@ -325,20 +327,20 @@ class LiquidGlassNavBar extends StatelessWidget {
                   height: 64,
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF1C1D21).withValues(alpha: 0.82)
-                        : const Color(0xFFFFFFFF).withValues(alpha: 0.82),
+                        ? const Color(0xFF1C1D21).withValues(alpha: opacity)
+                        : const Color(0xFFFFFFFF).withValues(alpha: opacity),
                     borderRadius: BorderRadius.circular(36),
                     border: Border.all(
                       color: isDark
-                          ? const Color(0xFF2A2B30)
-                          : const Color(0xFFE5E5DF),
+                          ? const Color(0xFF2A2B30).withValues(alpha: (opacity + 0.18).clamp(0.1, 1.0))
+                          : const Color(0xFFE5E5DF).withValues(alpha: (opacity + 0.18).clamp(0.1, 1.0)),
                       width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: isDark
-                            ? Colors.black.withValues(alpha: 0.35)
-                            : Colors.black.withValues(alpha: 0.05),
+                            ? Colors.black.withValues(alpha: (0.35 * opacity).clamp(0.1, 0.35))
+                            : Colors.black.withValues(alpha: (0.05 * opacity).clamp(0.02, 0.05)),
                         blurRadius: 24,
                         spreadRadius: 0,
                         offset: const Offset(0, 6),
@@ -388,7 +390,7 @@ class LiquidGlassNavBar extends StatelessWidget {
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
                                 if (!isSelected) {
-                                  HapticFeedback.selectionClick();
+                                  AppHaptics.selectionClick();
                                   onTap(index);
                                 }
                               },

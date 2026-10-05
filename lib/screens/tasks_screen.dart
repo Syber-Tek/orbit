@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:orbit/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/task.dart';
@@ -18,7 +18,7 @@ class TasksScreen extends ConsumerWidget {
     TaskItem? initialTask,
     DateTime? defaultDate,
   }) {
-    HapticFeedback.lightImpact();
+    AppHaptics.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -184,7 +184,7 @@ class TasksScreen extends ConsumerWidget {
 
                   return GestureDetector(
                     onTap: () {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.selectionClick();
                       ref
                           .read(selectedTaskDateProvider.notifier)
                           .selectDate(dayDate);
@@ -410,7 +410,7 @@ class TasksScreen extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        AppHaptics.selectionClick();
         ref.read(selectedTaskFilterProvider.notifier).setFilter(filter);
       },
       child: AnimatedContainer(
