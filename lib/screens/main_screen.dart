@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/screens/habits_screen.dart';
+import 'package:orbit/screens/ledger_screen.dart';
 import 'package:orbit/screens/screen_time_screen.dart';
 import 'package:orbit/screens/tasks_screen.dart';
 import 'package:orbit/utils/theme_provider.dart';
 import 'package:orbit/widgets/add_habit_sheet.dart';
 import 'package:orbit/widgets/add_task_sheet.dart';
+import 'package:orbit/widgets/add_transaction_sheet.dart';
 import 'package:orbit/widgets/liquid_glass_nav_bar.dart';
 import 'package:orbit/widgets/note_editor_sheet.dart';
 
@@ -70,6 +72,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
+  void _showAddExpense(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddTransactionSheet(),
+    );
+  }
+
   void _showAddNote(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -126,10 +137,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ScreenTimeScreen(
             onSettingsTap: () => _showSettingsSheet(context),
           ),
-          const _PlaceholderTabView(
-            title: 'Ledger',
-            subtitle: 'Budget ceiling & expense tracking',
-            icon: IconlyLight.wallet,
+          LedgerScreen(
+            onSettingsTap: () => _showSettingsSheet(context),
           ),
         ],
       ),
@@ -142,9 +151,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         },
         items: _navItems,
         onAddHabit: () => _showAddHabit(context),
-        onAddExpense: () {
-          // TODO: Open add expense modal
-        },
+        onAddExpense: () => _showAddExpense(context),
         onAddTodo: () => _showAddTask(context),
         onAddNote: () => _showAddNote(context),
       ),
@@ -325,60 +332,3 @@ class _SettingsSheet extends ConsumerWidget {
   }
 }
 
-class _PlaceholderTabView extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _PlaceholderTabView({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.outline),
-              ),
-              child: Center(
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

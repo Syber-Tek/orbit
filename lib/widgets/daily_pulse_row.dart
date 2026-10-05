@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
+import 'package:orbit/services/ledger_provider.dart';
+import 'package:orbit/services/screen_time_provider.dart';
 
-class DailyPulseRow extends StatelessWidget {
+class DailyPulseRow extends ConsumerWidget {
   final VoidCallback? onScreenTimeTap;
   final VoidCallback? onAlarmsTap;
   final VoidCallback? onBudgetTap;
@@ -14,9 +17,12 @@ class DailyPulseRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    final screenTime = ref.watch(screenTimeProvider);
+    final ledger = ref.watch(ledgerProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,10 +57,10 @@ class DailyPulseRow extends StatelessWidget {
                 context: context,
                 isDark: isDark,
                 icon: IconlyLight.chart,
-                accentColor: const Color(0xFF8B5CF6), // Purple
+                accentColor: isDark ? Colors.white : const Color(0xFF18181B),
                 title: 'Screen Time',
-                value: '2h 14m',
-                subtitle: '4h daily limit',
+                value: screenTime.formattedTotalSpent,
+                subtitle: '${screenTime.formattedDailyGoal} daily goal',
                 onTap: onScreenTimeTap,
               ),
             ),
@@ -65,7 +71,7 @@ class DailyPulseRow extends StatelessWidget {
                 context: context,
                 isDark: isDark,
                 icon: IconlyLight.timeCircle,
-                accentColor: const Color(0xFF3B82F6), // Blue
+                accentColor: isDark ? Colors.white : const Color(0xFF18181B),
                 title: 'Next Alarm',
                 value: '07:00 AM',
                 subtitle: 'Tomorrow morning',
@@ -79,10 +85,10 @@ class DailyPulseRow extends StatelessWidget {
                 context: context,
                 isDark: isDark,
                 icon: IconlyLight.wallet,
-                accentColor: const Color(0xFF10B981), // Emerald
+                accentColor: isDark ? Colors.white : const Color(0xFF18181B),
                 title: 'Spent Today',
-                value: '\$24.50',
-                subtitle: '\$60 daily cap',
+                value: '\$${ledger.totalSpentToday.toStringAsFixed(2)}',
+                subtitle: '\$${ledger.dailyBudgetLimit.toStringAsFixed(0)} daily cap',
                 onTap: onBudgetTap,
               ),
             ),
