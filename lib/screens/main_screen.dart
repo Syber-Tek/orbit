@@ -7,8 +7,10 @@ import 'package:orbit/screens/ledger_screen.dart';
 import 'package:orbit/screens/screen_time_screen.dart';
 import 'package:orbit/screens/tasks_screen.dart';
 import 'package:orbit/services/nav_bar_settings_provider.dart';
+import 'package:orbit/services/notification_service.dart';
 import 'package:orbit/services/notification_settings_provider.dart';
 import 'package:orbit/services/persistence_service.dart';
+import 'package:orbit/services/task_provider.dart';
 import 'package:orbit/utils/app_haptics.dart';
 import 'package:orbit/utils/theme_provider.dart';
 import 'package:orbit/widgets/add_custom_app_sheet.dart';
@@ -28,6 +30,30 @@ class MainScreen extends ConsumerStatefulWidget {
 class _MainScreenState extends ConsumerState<MainScreen> {
   late int _currentIndex = PersistenceService.instance.loadActiveTab().clamp(0, 3);
   late final PageController _pageController = PageController(initialPage: _currentIndex);
+
+  @override
+  void initState() {
+    super.initState();
+    _setupNotificationActionHandler();
+  }
+
+  void _setupNotificationActionHandler() {
+    NotificationService.instance.actionHandler = (actionId, taskId) async {
+      if (actionId == kActionDismiss) {
+        ref.read(taskListProvider.notifier).markTaskDone(taskId);
+      } else if (actionId == kActionSnooze) {
+        final settings = ref.read(notificationSettingsProvider);
+        final tasks = ref.read(taskListProvider);
+        for (final task in tasks) {
+          if (task.id == taskId) {
+            await NotificationService.instance
+                .scheduleSnooze(task, settings.snoozeMinutes);
+            break;
+          }
+        }
+      }
+    };
+  }
 
   @override
   void dispose() {
@@ -546,10 +572,214 @@ class _SettingsSheet extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    const Divider(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Alarm Sound',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Play audio chime when alarms trigger',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch.adaptive(
+                          value: notifSettings.soundEnabled,
+                          activeTrackColor: theme.colorScheme.primary,
+                          onChanged: (val) {
+                            ref
+                                .read(notificationSettingsProvider.notifier)
+                                .setSoundEnabled(val);
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    // Alarm Ring Duration Selector
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Alarm Ring Duration',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Rings continuously until snoozed, marked done, or duration ends',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            _buildOptionChip(
+                              context: context,
+                              label: '1 min',
+                              isSelected: notifSettings.alarmDurationMinutes == 1,
+                              onTap: () {
+                                ref
+                                    .read(notificationSettingsProvider.notifier)
+                                    .setAlarmDurationMinutes(1);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildOptionChip(
+                              context: context,
+                              label: '2 mins',
+                              isSelected: notifSettings.alarmDurationMinutes == 2,
+                              onTap: () {
+                                ref
+                                    .read(notificationSettingsProvider.notifier)
+                                    .setAlarmDurationMinutes(2);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildOptionChip(
+                              context: context,
+                              label: '3 mins',
+                              isSelected: notifSettings.alarmDurationMinutes == 3,
+                              onTap: () {
+                                ref
+                                    .read(notificationSettingsProvider.notifier)
+                                    .setAlarmDurationMinutes(3);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildOptionChip(
+                              context: context,
+                              label: '5 mins',
+                              isSelected: notifSettings.alarmDurationMinutes == 5,
+                              onTap: () {
+                                ref
+                                    .read(notificationSettingsProvider.notifier)
+                                    .setAlarmDurationMinutes(5);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    // Snooze Duration Selector
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Snooze Duration',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Minutes before a snoozed alarm alerts again',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            _buildOptionChip(
+                              context: context,
+                              label: '5 mins',
+                              isSelected: notifSettings.snoozeMinutes == 5,
+                              onTap: () {
+                                ref
+                                    .read(notificationSettingsProvider.notifier)
+                                    .setSnoozeMinutes(5);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildOptionChip(
+                              context: context,
+                              label: '10 mins',
+                              isSelected: notifSettings.snoozeMinutes == 10,
+                              onTap: () {
+                                ref
+                                    .read(notificationSettingsProvider.notifier)
+                                    .setSnoozeMinutes(10);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _buildOptionChip(
+                              context: context,
+                              label: '15 mins',
+                              isSelected: notifSettings.snoozeMinutes == 15,
+                              onTap: () {
+                                ref
+                                    .read(notificationSettingsProvider.notifier)
+                                    .setSnoozeMinutes(15);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionChip({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          AppHaptics.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? theme.colorScheme.primary.withValues(alpha: 0.16)
+                : theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ),
