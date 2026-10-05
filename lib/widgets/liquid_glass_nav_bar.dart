@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/utils/app_haptics.dart';
 
 typedef NavItemWidgetBuilder = Widget Function(
@@ -102,6 +103,7 @@ class LiquidGlassNavBar extends StatelessWidget {
   final VoidCallback? onAddExpense;
   final VoidCallback? onAddTodo;
   final VoidCallback? onAddNote;
+  final VoidCallback? onAddAppLimit;
   final double opacity;
 
   const LiquidGlassNavBar({
@@ -113,6 +115,7 @@ class LiquidGlassNavBar extends StatelessWidget {
     this.onAddExpense,
     this.onAddTodo,
     this.onAddNote,
+    this.onAddAppLimit,
     this.opacity = 0.70,
   });
 
@@ -130,11 +133,11 @@ class LiquidGlassNavBar extends StatelessWidget {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
             child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.black.withValues(alpha: 0.75)
-                    : Colors.white.withValues(alpha: 0.88),
+                    ? Colors.black.withValues(alpha: 0.82)
+                    : Colors.white.withValues(alpha: 0.92),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                 border: Border.all(
                   color: isDark
@@ -143,84 +146,102 @@ class LiquidGlassNavBar extends StatelessWidget {
                   width: 1.2,
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.25)
-                          : Colors.black.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        'Quick Action',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                      Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : Colors.black.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        onPressed: () => Navigator.pop(ctx),
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Add New',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 20),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildQuickActionTile(
+                        context: context,
+                        icon: IconlyBold.home,
+                        title: 'Habit',
+                        subtitle: 'Track a new daily routine or goal',
+                        accentColor: const Color(0xFFFF6B2B),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onAddHabit?.call();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildQuickActionTile(
+                        context: context,
+                        icon: IconlyBold.timeCircle,
+                        title: 'Task',
+                        subtitle: 'Add a todo, reminder, or alarm',
+                        accentColor: const Color(0xFF3B82F6),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onAddTodo?.call();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildQuickActionTile(
+                        context: context,
+                        icon: IconlyBold.chart,
+                        title: 'Screen Time',
+                        subtitle: 'Set a daily app boundary or limit',
+                        accentColor: const Color(0xFF8B5CF6),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onAddAppLimit?.call();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildQuickActionTile(
+                        context: context,
+                        icon: IconlyBold.wallet,
+                        title: 'Ledger',
+                        subtitle: 'Log an expense, budget, or transaction',
+                        accentColor: const Color(0xFF10B981),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onAddExpense?.call();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildQuickActionTile(
+                        context: context,
+                        icon: IconlyBold.document,
+                        title: 'Note',
+                        subtitle: 'Create a rich-text document',
+                        accentColor: const Color(0xFFF59E0B),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onAddNote?.call();
+                        },
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _buildQuickActionTile(
-                    context: context,
-                    icon: Icons.local_fire_department_rounded,
-                    title: 'New Habit',
-                    subtitle: 'Track a new daily routine or goal',
-                    accentColor: const Color(0xFFFF6B2B),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      onAddHabit?.call();
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _buildQuickActionTile(
-                    context: context,
-                    icon: Icons.savings_rounded,
-                    title: 'New Expense / Budget',
-                    subtitle: 'Log a payment or manage budget',
-                    accentColor: const Color(0xFF10B981),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      onAddExpense?.call();
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _buildQuickActionTile(
-                    context: context,
-                    icon: Icons.track_changes_rounded,
-                    title: 'New Task',
-                    subtitle: 'Add a todo or reminder',
-                    accentColor: const Color(0xFF3B82F6),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      onAddTodo?.call();
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _buildQuickActionTile(
-                    context: context,
-                    icon: Icons.sticky_note_2_rounded,
-                    title: 'New Note',
-                    subtitle: 'Create a rich-text document',
-                    accentColor: const Color(0xFFF59E0B),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      onAddNote?.call();
-                    },
-                  ),
-                ],
+                ),
               ),
             ),
           ),

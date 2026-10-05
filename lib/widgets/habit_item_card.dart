@@ -180,8 +180,8 @@ class HabitItemCard extends StatelessWidget {
                   color: isDone
                       ? Colors.transparent
                       : (isDark
-                            ? const Color(0xFF383A44)
-                            : const Color(0xFFD4D4CE)),
+                            ? Colors.white.withValues(alpha: 0.35)
+                            : const Color(0xFF18181B)),
                   width: 1.8,
                 ),
               ),

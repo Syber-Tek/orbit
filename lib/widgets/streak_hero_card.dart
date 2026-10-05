@@ -205,21 +205,22 @@ class StreakHeroCard extends ConsumerWidget {
     }
 
     if (isToday) {
+      final ringColor = isDark ? Colors.white : const Color(0xFF18181B);
       return Container(
         width: 32,
         height: 32,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.transparent,
-          border: Border.all(color: const Color(0xFFFF6B2B), width: 2),
+          border: Border.all(color: ringColor, width: 2),
         ),
         child: Center(
           child: Container(
             width: 10,
             height: 10,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0xFFFF6B2B),
+              color: ringColor,
             ),
           ),
         ),

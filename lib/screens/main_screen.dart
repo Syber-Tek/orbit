@@ -11,6 +11,7 @@ import 'package:orbit/services/notification_settings_provider.dart';
 import 'package:orbit/services/persistence_service.dart';
 import 'package:orbit/utils/app_haptics.dart';
 import 'package:orbit/utils/theme_provider.dart';
+import 'package:orbit/widgets/add_custom_app_sheet.dart';
 import 'package:orbit/widgets/add_habit_sheet.dart';
 import 'package:orbit/widgets/add_task_sheet.dart';
 import 'package:orbit/widgets/add_transaction_sheet.dart';
@@ -99,6 +100,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const NoteEditorSheet(),
+    );
+  }
+
+  void _showAddAppLimit(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddCustomAppSheet(),
     );
   }
 
@@ -203,6 +213,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         onAddHabit: () => _showAddHabit(context),
         onAddExpense: () => _showAddExpense(context),
         onAddTodo: () => _showAddTask(context),
+        onAddAppLimit: () => _showAddAppLimit(context),
         onAddNote: () => _showAddNote(context),
       ),
     ),
