@@ -261,7 +261,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
             // Section: Scheduled Time & Alarm
             Text(
-              'TIME & ALARM',
+              'Time & Alarm',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -382,7 +382,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
             // Section: Priority
             Text(
-              'PRIORITY',
+              'Priority',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -440,7 +440,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
             // Section: Category
             Text(
-              'CATEGORY',
+              'Category',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,

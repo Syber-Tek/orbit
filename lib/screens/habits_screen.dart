@@ -15,11 +15,7 @@ class HabitsScreen extends ConsumerWidget {
   final ValueChanged<int>? onNavigateTab;
   final VoidCallback? onSettingsTap;
 
-  const HabitsScreen({
-    super.key,
-    this.onNavigateTab,
-    this.onSettingsTap,
-  });
+  const HabitsScreen({super.key, this.onNavigateTab, this.onSettingsTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,16 +46,6 @@ class HabitsScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'TODAY\'S MOMENTUM',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
                             'Orbit Daily',
                             style: theme.textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.w800,
@@ -80,10 +66,7 @@ class HabitsScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        icon: const Icon(
-                          IconlyLight.setting,
-                          size: 22,
-                        ),
+                        icon: const Icon(IconlyLight.setting, size: 22),
                       ),
                     ],
                   ),
@@ -95,9 +78,11 @@ class HabitsScreen extends ConsumerWidget {
 
                   // Orbit Pulse Bento Row (Ref 4)
                   DailyPulseRow(
-                    onScreenTimeTap: () => onNavigateTab?.call(2), // Screen Time Tab
-                    onAlarmsTap: () => onNavigateTab?.call(1),     // Alarms & Tasks Tab
-                    onBudgetTap: () => onNavigateTab?.call(3),     // Budget Tab
+                    onScreenTimeTap: () =>
+                        onNavigateTab?.call(2), // Screen Time Tab
+                    onAlarmsTap: () =>
+                        onNavigateTab?.call(1), // Alarms & Tasks Tab
+                    onBudgetTap: () => onNavigateTab?.call(3), // Budget Tab
                   ),
                   const SizedBox(height: 26),
 
@@ -106,12 +91,14 @@ class HabitsScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'TODAY\'S HABITS',
+                        'Today\'s Habits',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
                         ),
                       ),
                       Text(
@@ -136,7 +123,9 @@ class HabitsScreen extends ConsumerWidget {
                           ref: ref,
                           label: 'All Habits',
                           isSelected: activeFilter == null,
-                          onTap: () => ref.read(selectedHabitFilterProvider.notifier).setFilter(null),
+                          onTap: () => ref
+                              .read(selectedHabitFilterProvider.notifier)
+                              .setFilter(null),
                         ),
                         const SizedBox(width: 8),
                         _buildFilterPill(
@@ -144,7 +133,9 @@ class HabitsScreen extends ConsumerWidget {
                           ref: ref,
                           label: 'Morning',
                           isSelected: activeFilter == HabitTimeOfDay.morning,
-                          onTap: () => ref.read(selectedHabitFilterProvider.notifier).setFilter(HabitTimeOfDay.morning),
+                          onTap: () => ref
+                              .read(selectedHabitFilterProvider.notifier)
+                              .setFilter(HabitTimeOfDay.morning),
                         ),
                         const SizedBox(width: 8),
                         _buildFilterPill(
@@ -152,7 +143,9 @@ class HabitsScreen extends ConsumerWidget {
                           ref: ref,
                           label: 'Afternoon',
                           isSelected: activeFilter == HabitTimeOfDay.afternoon,
-                          onTap: () => ref.read(selectedHabitFilterProvider.notifier).setFilter(HabitTimeOfDay.afternoon),
+                          onTap: () => ref
+                              .read(selectedHabitFilterProvider.notifier)
+                              .setFilter(HabitTimeOfDay.afternoon),
                         ),
                         const SizedBox(width: 8),
                         _buildFilterPill(
@@ -160,7 +153,9 @@ class HabitsScreen extends ConsumerWidget {
                           ref: ref,
                           label: 'Evening',
                           isSelected: activeFilter == HabitTimeOfDay.evening,
-                          onTap: () => ref.read(selectedHabitFilterProvider.notifier).setFilter(HabitTimeOfDay.evening),
+                          onTap: () => ref
+                              .read(selectedHabitFilterProvider.notifier)
+                              .setFilter(HabitTimeOfDay.evening),
                         ),
                       ],
                     ),
@@ -175,7 +170,9 @@ class HabitsScreen extends ConsumerWidget {
                         child: Text(
                           'No habits for this time period.',
                           style: TextStyle(
-                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                            color: isDark
+                                ? Colors.grey.shade500
+                                : Colors.grey.shade500,
                             fontSize: 14,
                           ),
                         ),
@@ -186,7 +183,9 @@ class HabitsScreen extends ConsumerWidget {
                       return HabitItemCard(
                         habit: habit,
                         onToggle: () {
-                          ref.read(habitListProvider.notifier).toggleHabit(habit.id);
+                          ref
+                              .read(habitListProvider.notifier)
+                              .toggleHabit(habit.id);
                         },
                       );
                     }),
@@ -198,12 +197,14 @@ class HabitsScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'QUICK NOTES',
+                        'Quick Notes',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
                         ),
                       ),
                       Row(
@@ -235,11 +236,16 @@ class HabitsScreen extends ConsumerWidget {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const AllNotesScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const AllNotesScreen(),
+                                ),
                               );
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 7,
+                              ),
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? const Color(0xFF1E1F25)
@@ -257,7 +263,10 @@ class HabitsScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  const Icon(Icons.arrow_outward_rounded, size: 14),
+                                  const Icon(
+                                    Icons.arrow_outward_rounded,
+                                    size: 14,
+                                  ),
                                 ],
                               ),
                             ),
@@ -276,16 +285,23 @@ class HabitsScreen extends ConsumerWidget {
                         return Container(
                           padding: const EdgeInsets.symmetric(vertical: 24),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF18191E) : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            color: isDark
+                                ? const Color(0xFF18191E)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                              color: isDark
+                                  ? const Color(0xFF272830)
+                                  : const Color(0xFFE5E5DF),
                             ),
                           ),
                           child: const Center(
                             child: Text(
                               'No notes yet. Tap + to add one.',
-                              style: TextStyle(fontSize: 13, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
                         );
