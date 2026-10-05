@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/screens/habits_screen.dart';
+import 'package:orbit/screens/screen_time_screen.dart';
 import 'package:orbit/screens/tasks_screen.dart';
 import 'package:orbit/utils/theme_provider.dart';
 import 'package:orbit/widgets/add_habit_sheet.dart';
@@ -122,10 +123,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           TasksScreen(
             onSettingsTap: () => _showSettingsSheet(context),
           ),
-          const _PlaceholderTabView(
-            title: 'Screen Time',
-            subtitle: 'App timers, focus sessions & digital wellbeing',
-            icon: IconlyLight.chart,
+          ScreenTimeScreen(
+            onSettingsTap: () => _showSettingsSheet(context),
           ),
           const _PlaceholderTabView(
             title: 'Ledger',
