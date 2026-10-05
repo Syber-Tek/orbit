@@ -11,9 +11,11 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettings> {
   static const _kVibration = 'orbit.notif.vibration';
   static const _kSound = 'orbit.notif.sound';
   static const _kSnoozeMinutes = 'orbit.notif.snooze_minutes';
+  static const _kAlarmDurationMinutes = 'orbit.notif.alarm_duration_minutes';
   static const _kBypassDnd = 'orbit.notif.bypass_dnd';
 
   static const int defaultSnoozeMinutes = 10;
+  static const int defaultAlarmDurationMinutes = 2;
 
   @override
   NotificationSettings build() {
@@ -27,6 +29,8 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettings> {
       vibrationEnabled: prefs.getBool(_kVibration) ?? true,
       soundEnabled: prefs.getBool(_kSound) ?? true,
       snoozeMinutes: prefs.getInt(_kSnoozeMinutes) ?? defaultSnoozeMinutes,
+      alarmDurationMinutes:
+          prefs.getInt(_kAlarmDurationMinutes) ?? defaultAlarmDurationMinutes,
       bypassDnd: prefs.getBool(_kBypassDnd) ?? false,
     );
   }
@@ -49,6 +53,12 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettings> {
     await prefs.setInt(_kSnoozeMinutes, minutes);
   }
 
+  Future<void> setAlarmDurationMinutes(int minutes) async {
+    state = state.copyWith(alarmDurationMinutes: minutes);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kAlarmDurationMinutes, minutes);
+  }
+
   Future<void> setBypassDnd(bool value) async {
     state = state.copyWith(bypassDnd: value);
     final prefs = await SharedPreferences.getInstance();
@@ -59,18 +69,21 @@ class NotificationSettingsNotifier extends Notifier<NotificationSettings> {
 final notificationSettingsProvider =
     NotifierProvider<NotificationSettingsNotifier, NotificationSettings>(
   NotificationSettingsNotifier.new,
-    );
+);
 
 class NotificationSettings {
   final bool vibrationEnabled;
   final bool soundEnabled;
   final int snoozeMinutes;
+  final int alarmDurationMinutes;
   final bool bypassDnd;
 
   const NotificationSettings({
     this.vibrationEnabled = true,
     this.soundEnabled = true,
     this.snoozeMinutes = NotificationSettingsNotifier.defaultSnoozeMinutes,
+    this.alarmDurationMinutes =
+        NotificationSettingsNotifier.defaultAlarmDurationMinutes,
     this.bypassDnd = false,
   });
 
@@ -78,12 +91,14 @@ class NotificationSettings {
     bool? vibrationEnabled,
     bool? soundEnabled,
     int? snoozeMinutes,
+    int? alarmDurationMinutes,
     bool? bypassDnd,
   }) {
     return NotificationSettings(
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
       soundEnabled: soundEnabled ?? this.soundEnabled,
       snoozeMinutes: snoozeMinutes ?? this.snoozeMinutes,
+      alarmDurationMinutes: alarmDurationMinutes ?? this.alarmDurationMinutes,
       bypassDnd: bypassDnd ?? this.bypassDnd,
     );
   }

@@ -37,6 +37,17 @@ class TaskListNotifier extends Notifier<List<TaskItem>> {
     unawaited(NotificationService.instance.scheduleTaskAlarm(task));
   }
 
+  void markTaskDone(String id) {
+    final updated = state.map((task) {
+      if (task.id != id) return task;
+      return task.copyWith(isCompleted: true);
+    }).toList();
+
+    state = updated;
+    unawaited(_persist());
+    unawaited(NotificationService.instance.cancelTaskAlarm(id));
+  }
+
   void addTask(TaskItem task) {
     state = [task, ...state];
     unawaited(_persist());

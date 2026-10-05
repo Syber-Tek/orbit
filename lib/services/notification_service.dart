@@ -185,12 +185,11 @@ class NotificationService {
   }
 
   Future<void> _dispatchAction(String actionId, String taskId) async {
+    await applyActionToDisk(actionId, taskId);
     final handler = actionHandler;
     if (handler != null) {
       await handler(actionId, taskId);
-      return;
     }
-    await applyActionToDisk(actionId, taskId);
   }
 
   /// Applies a snooze or dismiss directly against storage. Safe to call from a
@@ -266,6 +265,8 @@ class NotificationService {
         vibration: prefs.getBool('orbit.notif.vibration') ?? true,
         sound: prefs.getBool('orbit.notif.sound') ?? true,
         snoozeMinutes: prefs.getInt('orbit.notif.snooze_minutes') ?? 10,
+        alarmDurationMinutes:
+            prefs.getInt('orbit.notif.alarm_duration_minutes') ?? 2,
         bypassDnd: prefs.getBool('orbit.notif.bypass_dnd') ?? false,
       );
     } catch (error) {
@@ -325,6 +326,11 @@ class NotificationService {
   }
 
   NotificationDetails _alarmDetails(_AlarmPrefs prefs) {
+    // 4 is Notification.FLAG_INSISTENT: loops sound/vibration repeatedly until dismissed/snoozed
+    final additionalFlags = Int32List.fromList([4]);
+    // Timeout after the configured duration in minutes (default: 2 minutes = 120,000 ms)
+    final timeoutMs = prefs.alarmDurationMinutes * 60 * 1000;
+
     return NotificationDetails(
       android: AndroidNotificationDetails(
         _alarmChannelId(sound: prefs.sound, vibration: prefs.vibration),
@@ -339,6 +345,10 @@ class NotificationService {
         enableVibration: prefs.vibration,
         vibrationPattern: prefs.vibration ? _alarmVibration : null,
         channelBypassDnd: prefs.bypassDnd,
+        category: AndroidNotificationCategory.alarm,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        additionalFlags: additionalFlags,
+        timeoutAfter: timeoutMs,
         // Stay on screen until snoozed or dismissed, like a real alarm.
         ongoing: true,
         autoCancel: false,
@@ -495,12 +505,14 @@ class _AlarmPrefs {
   final bool vibration;
   final bool sound;
   final int snoozeMinutes;
+  final int alarmDurationMinutes;
   final bool bypassDnd;
 
   const _AlarmPrefs({
     this.vibration = true,
     this.sound = true,
     this.snoozeMinutes = 10,
+    this.alarmDurationMinutes = 2,
     this.bypassDnd = false,
   });
 }
