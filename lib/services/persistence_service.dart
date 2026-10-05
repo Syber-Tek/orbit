@@ -27,6 +27,8 @@ class PersistenceService {
   static const _kNativeAppLimitsKey = 'app_limits_json';
   static const _kNavBarOpacityKey = 'orbit.nav_bar_opacity.v1';
   static const _kHapticsEnabledKey = 'orbit.haptics_enabled.v1';
+  static const _kThemeModeKey = 'orbit.theme_mode.v1';
+  static const _kActiveTabKey = 'orbit.active_tab.v1';
 
   SharedPreferences? _prefs;
 
@@ -257,5 +259,29 @@ class PersistenceService {
   Future<void> saveHapticsEnabled(bool enabled) async {
     final p = _prefs ?? await init();
     await p.setBool(_kHapticsEnabledKey, enabled);
+  }
+
+  ThemeMode loadThemeMode() {
+    final raw = _prefs?.getString(_kThemeModeKey);
+    if (raw == 'light') return ThemeMode.light;
+    if (raw == 'dark') return ThemeMode.dark;
+    return ThemeMode.system;
+  }
+
+  Future<void> saveThemeMode(ThemeMode mode) async {
+    final p = _prefs ?? await init();
+    String val = 'system';
+    if (mode == ThemeMode.light) val = 'light';
+    if (mode == ThemeMode.dark) val = 'dark';
+    await p.setString(_kThemeModeKey, val);
+  }
+
+  int loadActiveTab() {
+    return _prefs?.getInt(_kActiveTabKey) ?? 0;
+  }
+
+  Future<void> saveActiveTab(int tabIndex) async {
+    final p = _prefs ?? await init();
+    await p.setInt(_kActiveTabKey, tabIndex);
   }
 }

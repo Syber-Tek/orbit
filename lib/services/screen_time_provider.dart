@@ -261,6 +261,7 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
   void setAppLimit(
     String id,
     int? limitMinutes, {
+    String? packageName,
     bool? notifyAt10Min,
     bool? notifyAt5Min,
     bool? isStrictLock,
@@ -274,6 +275,9 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
       apps: state.apps.map((app) {
         if (app.id != id) return app;
         return app.copyWith(
+          packageName: packageName?.trim().isNotEmpty == true
+              ? packageName!.trim()
+              : app.packageName,
           limitMinutes: limitMinutes,
           notifyAt10Min: notifyAt10Min ?? app.notifyAt10Min,
           notifyAt5Min: notifyAt5Min ?? app.notifyAt5Min,

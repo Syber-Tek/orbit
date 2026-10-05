@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/screens/habits_screen.dart';
@@ -7,6 +8,7 @@ import 'package:orbit/screens/screen_time_screen.dart';
 import 'package:orbit/screens/tasks_screen.dart';
 import 'package:orbit/services/nav_bar_settings_provider.dart';
 import 'package:orbit/services/notification_settings_provider.dart';
+import 'package:orbit/services/persistence_service.dart';
 import 'package:orbit/utils/app_haptics.dart';
 import 'package:orbit/utils/theme_provider.dart';
 import 'package:orbit/widgets/add_habit_sheet.dart';
@@ -23,7 +25,7 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex = PersistenceService.instance.loadActiveTab().clamp(0, 3);
   late final PageController _pageController = PageController(initialPage: _currentIndex);
 
   @override
@@ -106,7 +108,24 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final navBarOpacity = ref.watch(navBarOpacityProvider);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          _pageController.animateToPage(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic,
+          );
+        } else {
+          // Move task to background without killing activity
+          const MethodChannel('com.example.orbit/usage_stats')
+              .invokeMethod('moveTaskToBack')
+              .catchError((_) {});
+        }
+      },
+      child: Scaffold(
       extendBody: true,
       appBar: _currentIndex == 0
           ? null
@@ -142,9 +161,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           setState(() {
             _currentIndex = index;
           });
+          PersistenceService.instance.saveActiveTab(index);
         },
         children: [
           HabitsScreen(
+            key: const PageStorageKey('tab_habits'),
             onNavigateTab: (index) {
               _pageController.animateToPage(
                 index,
@@ -155,12 +176,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             onSettingsTap: () => _showSettingsSheet(context),
           ),
           TasksScreen(
+            key: const PageStorageKey('tab_tasks'),
             onSettingsTap: () => _showSettingsSheet(context),
           ),
           ScreenTimeScreen(
+            key: const PageStorageKey('tab_screen_time'),
             onSettingsTap: () => _showSettingsSheet(context),
           ),
           LedgerScreen(
+            key: const PageStorageKey('tab_ledger'),
             onSettingsTap: () => _showSettingsSheet(context),
           ),
         ],
@@ -181,8 +205,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         onAddTodo: () => _showAddTask(context),
         onAddNote: () => _showAddNote(context),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _SettingsSheet extends ConsumerWidget {
