@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/screen_time.dart';
 import 'package:orbit/services/screen_time_provider.dart';
+import 'package:orbit/utils/app_haptics.dart';
 
 class AddCustomAppSheet extends ConsumerStatefulWidget {
   const AddCustomAppSheet({super.key});
@@ -14,6 +14,7 @@ class AddCustomAppSheet extends ConsumerStatefulWidget {
 
 class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
   final _nameController = TextEditingController();
+  final _packageController = TextEditingController();
   AppCategory _selectedCategory = AppCategory.social;
   int? _limitMinutes = 60; // 1 hour default
   int _hours = 1;
@@ -28,13 +29,14 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
   @override
   void dispose() {
     _nameController.dispose();
+    _packageController.dispose();
     super.dispose();
   }
 
   void _save() {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      HapticFeedback.heavyImpact();
+      AppHaptics.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter an app name'),
@@ -44,11 +46,16 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
       return;
     }
 
-    HapticFeedback.mediumImpact();
+    var pkg = _packageController.text.trim();
+    if (pkg.isEmpty) {
+      pkg = 'com.${name.toLowerCase().replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}';
+    }
+
+    AppHaptics.mediumImpact();
     final newApp = AppUsageItem(
       id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
-      packageName: 'custom.${name.toLowerCase().replaceAll(' ', '_')}',
+      packageName: pkg,
       category: _selectedCategory,
       timeSpentMinutes: 0,
       limitMinutes: _limitMinutes,
@@ -74,6 +81,41 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
     if (h > 0 && m > 0) return '${h}h ${m}m';
     if (h > 0) return '${h}h';
     return '${m}m';
+  }
+
+  Widget _buildQuickAppSuggestion(
+    String name,
+    String pkg,
+    AppCategory category,
+    bool isDark,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ActionChip(
+        avatar: Icon(Icons.bolt_rounded, size: 14, color: category.color),
+        label: Text(name),
+        labelStyle: TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.white70 : Colors.black87,
+        ),
+        backgroundColor: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.black.withValues(alpha: 0.04),
+        side: BorderSide(
+          color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        onPressed: () {
+          AppHaptics.selectionClick();
+          setState(() {
+            _nameController.text = name;
+            _packageController.text = pkg;
+            _selectedCategory = category;
+          });
+        },
+      ),
+    );
   }
 
   void _updateCustomTime(int hours, int minutes) {
@@ -166,6 +208,61 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
                 ),
               ),
             ),
+            const SizedBox(height: 14),
+
+            // Package Name Input
+            TextField(
+              controller: _packageController,
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5),
+              decoration: InputDecoration(
+                hintText: 'e.g. com.google.android.youtube or com.whatsapp',
+                labelText: 'Android Package Name',
+                prefixIcon: const Icon(IconlyLight.shieldDone, size: 20),
+                helperText: 'Required for native background lockout & usage tracking',
+                helperStyle: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+                filled: true,
+                fillColor: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Quick App Autofill Suggestions
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  _buildQuickAppSuggestion('YouTube', 'com.google.android.youtube', AppCategory.entertainment, isDark),
+                  _buildQuickAppSuggestion('Instagram', 'com.instagram.android', AppCategory.social, isDark),
+                  _buildQuickAppSuggestion('TikTok', 'com.zhiliaoapp.musically', AppCategory.entertainment, isDark),
+                  _buildQuickAppSuggestion('WhatsApp', 'com.whatsapp', AppCategory.social, isDark),
+                  _buildQuickAppSuggestion('Reddit', 'com.reddit.frontpage', AppCategory.social, isDark),
+                  _buildQuickAppSuggestion('Twitter / X', 'com.twitter.android', AppCategory.social, isDark),
+                  _buildQuickAppSuggestion('Spotify', 'com.spotify.music', AppCategory.entertainment, isDark),
+                  _buildQuickAppSuggestion('Chrome', 'com.android.chrome', AppCategory.productivity, isDark),
+                  _buildQuickAppSuggestion('Snapchat', 'com.snapchat.android', AppCategory.social, isDark),
+                  _buildQuickAppSuggestion('Facebook', 'com.facebook.katana', AppCategory.social, isDark),
+                  _buildQuickAppSuggestion('Telegram', 'org.telegram.messenger', AppCategory.social, isDark),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Category Chips
@@ -191,7 +288,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
                       label: Text(cat.label),
                       selected: isSelected,
                       onSelected: (val) {
-                        HapticFeedback.selectionClick();
+                        AppHaptics.selectionClick();
                         if (val) setState(() => _selectedCategory = cat);
                       },
                       selectedColor: isDark ? Colors.white : const Color(0xFF18181B),
@@ -257,7 +354,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
                     label: Text(_formatMinutes(mins)),
                     selected: isSelected,
                     onSelected: (val) {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.selectionClick();
                       setState(() {
                         _showCustomStepper = false;
                         _limitMinutes = val ? mins : null;
@@ -293,7 +390,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
                   label: const Text('Custom...'),
                   selected: _showCustomStepper || (_limitMinutes != null && !isPresetSelected),
                   onSelected: (val) {
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selectionClick();
                     setState(() {
                       _showCustomStepper = true;
                       if (_limitMinutes == null) {
@@ -328,7 +425,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
                   label: const Text('No Limit'),
                   selected: _limitMinutes == null,
                   onSelected: (val) {
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selectionClick();
                     setState(() {
                       _showCustomStepper = false;
                       _limitMinutes = null;
@@ -460,7 +557,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
                     subtitle: const Text('Early reminder before time runs out'),
                     value: _notifyAt10Min,
                     onChanged: (val) {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.selectionClick();
                       setState(() => _notifyAt10Min = val);
                     },
                     activeTrackColor: const Color(0xFFFFB800),
@@ -475,7 +572,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
                     subtitle: const Text('Urgent warning before app locks'),
                     value: _notifyAt5Min,
                     onChanged: (val) {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.selectionClick();
                       setState(() => _notifyAt5Min = val);
                     },
                     activeTrackColor: const Color(0xFFFF5500),
@@ -490,7 +587,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
                     subtitle: const Text('Close and lock app when limit is reached'),
                     value: _isStrictLock,
                     onChanged: (val) {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.selectionClick();
                       setState(() => _isStrictLock = val);
                     },
                     activeTrackColor: const Color(0xFFEF4444),

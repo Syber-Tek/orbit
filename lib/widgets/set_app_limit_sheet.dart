@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/screen_time.dart';
 import 'package:orbit/services/screen_time_provider.dart';
+import 'package:orbit/utils/app_haptics.dart';
 
 class SetAppLimitSheet extends ConsumerStatefulWidget {
   final AppUsageItem app;
@@ -18,6 +18,7 @@ class SetAppLimitSheet extends ConsumerStatefulWidget {
 }
 
 class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
+  late final TextEditingController _packageController;
   late int? _selectedLimitMinutes;
   late bool _notifyAt10Min;
   late bool _notifyAt5Min;
@@ -29,6 +30,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
   @override
   void initState() {
     super.initState();
+    _packageController = TextEditingController(text: widget.app.packageName);
     _selectedLimitMinutes = widget.app.limitMinutes;
     _notifyAt10Min = widget.app.notifyAt10Min;
     _notifyAt5Min = widget.app.notifyAt5Min;
@@ -40,11 +42,18 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
     }
   }
 
+  @override
+  void dispose() {
+    _packageController.dispose();
+    super.dispose();
+  }
+
   void _save() {
-    HapticFeedback.mediumImpact();
+    AppHaptics.mediumImpact();
     ref.read(screenTimeProvider.notifier).setAppLimit(
           widget.app.id,
           _selectedLimitMinutes,
+          packageName: _packageController.text.trim(),
           notifyAt10Min: _notifyAt10Min,
           notifyAt5Min: _notifyAt5Min,
           isStrictLock: _isStrictLock,
@@ -64,7 +73,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
   }
 
   void _deleteApp() {
-    HapticFeedback.heavyImpact();
+    AppHaptics.heavyImpact();
     ref.read(screenTimeProvider.notifier).deleteApp(widget.app.id);
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -174,7 +183,41 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
+
+            // Package Name Input
+            TextField(
+              controller: _packageController,
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              decoration: InputDecoration(
+                labelText: 'Android Package Name',
+                hintText: 'e.g. com.google.android.youtube',
+                prefixIcon: const Icon(IconlyLight.shieldDone, size: 18),
+                helperText: 'Native package identifier for tracking and app lockout',
+                helperStyle: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                filled: true,
+                fillColor: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Daily App Limit Section
             Row(
@@ -213,7 +256,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
                     label: Text(_formatMinutes(mins)),
                     selected: isSelected,
                     onSelected: (val) {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.selectionClick();
                       setState(() {
                         _showCustomStepper = false;
                         _selectedLimitMinutes = val ? mins : null;
@@ -249,7 +292,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
                   label: const Text('Custom...'),
                   selected: _showCustomStepper || (_selectedLimitMinutes != null && !isPresetSelected),
                   onSelected: (val) {
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selectionClick();
                     setState(() {
                       _showCustomStepper = true;
                       if (_selectedLimitMinutes == null) {
@@ -284,7 +327,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
                   label: const Text('No Limit'),
                   selected: _selectedLimitMinutes == null,
                   onSelected: (val) {
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selectionClick();
                     setState(() {
                       _showCustomStepper = false;
                       _selectedLimitMinutes = null;
@@ -426,7 +469,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
                     onChanged: _selectedLimitMinutes == null
                         ? null
                         : (val) {
-                            HapticFeedback.selectionClick();
+                            AppHaptics.selectionClick();
                             setState(() => _notifyAt10Min = val);
                           },
                     activeTrackColor: const Color(0xFFFFB800),
@@ -443,7 +486,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
                     onChanged: _selectedLimitMinutes == null
                         ? null
                         : (val) {
-                            HapticFeedback.selectionClick();
+                            AppHaptics.selectionClick();
                             setState(() => _notifyAt5Min = val);
                           },
                     activeTrackColor: const Color(0xFFFF5500),
@@ -460,7 +503,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
                     onChanged: _selectedLimitMinutes == null
                         ? null
                         : (val) {
-                            HapticFeedback.selectionClick();
+                            AppHaptics.selectionClick();
                             setState(() => _isStrictLock = val);
                           },
                     activeTrackColor: const Color(0xFFEF4444),
