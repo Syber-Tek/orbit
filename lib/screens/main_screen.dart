@@ -21,6 +21,19 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   int _currentIndex = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   final List<LiquidNavItem> _navItems = [
     const LiquidNavItem(
@@ -124,11 +137,23 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 const SizedBox(width: 14),
               ],
             ),
-      body: IndexedStack(
-        index: _currentIndex,
+      body: PageView(
+        controller: _pageController,
+        physics: const BouncingScrollPhysics(),
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         children: [
           HabitsScreen(
-            onNavigateTab: (index) => setState(() => _currentIndex = index),
+            onNavigateTab: (index) {
+              _pageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeInOutCubic,
+              );
+            },
             onSettingsTap: () => _showSettingsSheet(context),
           ),
           TasksScreen(
@@ -145,9 +170,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       bottomNavigationBar: LiquidGlassNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeInOutCubic,
+          );
         },
         items: _navItems,
         onAddHabit: () => _showAddHabit(context),

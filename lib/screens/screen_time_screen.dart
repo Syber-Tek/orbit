@@ -63,6 +63,7 @@ class ScreenTimeScreen extends ConsumerWidget {
     final lockedApps = screenTimeState.lockedApps;
 
     return CustomScrollView(
+      key: const PageStorageKey('screentime_scroll'),
       physics: const BouncingScrollPhysics(),
       slivers: [
         // Daily Screen Time Overview Bento Card (Image 1 & 3 style)

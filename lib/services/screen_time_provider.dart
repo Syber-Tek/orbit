@@ -64,12 +64,12 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
     return const ScreenTimeState(
       apps: [
         AppUsageItem(
-          id: 'instagram',
-          name: 'Instagram',
-          packageName: 'com.instagram.android',
+          id: 'whatsapp',
+          name: 'WhatsApp',
+          packageName: 'com.whatsapp',
           category: AppCategory.social,
-          timeSpentMinutes: 52,
-          limitMinutes: 60, // 8 mins left -> triggers 10-min warning!
+          timeSpentMinutes: 185,
+          limitMinutes: 300, // 300 mins default limit
           notifyAt10Min: true,
           notifyAt5Min: true,
           isStrictLock: true,
@@ -86,37 +86,51 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           isStrictLock: true,
         ),
         AppUsageItem(
+          id: 'instagram',
+          name: 'Instagram',
+          packageName: 'com.instagram.android',
+          category: AppCategory.social,
+          timeSpentMinutes: 52,
+          limitMinutes: 60, // 8 mins left -> triggers 10-min warning!
+          notifyAt10Min: true,
+          notifyAt5Min: true,
+          isStrictLock: true,
+        ),
+        AppUsageItem(
+          id: 'snapchat',
+          name: 'Snapchat',
+          packageName: 'com.snapchat.android',
+          category: AppCategory.social,
+          timeSpentMinutes: 26,
+          limitMinutes: 30, // 4 mins left -> triggers 5-min warning!
+          notifyAt10Min: true,
+          notifyAt5Min: true,
+          isStrictLock: true,
+        ),
+        AppUsageItem(
           id: 'youtube',
           name: 'YouTube',
           packageName: 'com.google.android.youtube',
           category: AppCategory.entertainment,
-          timeSpentMinutes: 38,
-          limitMinutes: 90,
+          timeSpentMinutes: 68,
+          limitMinutes: 120,
           notifyAt10Min: true,
           notifyAt5Min: true,
         ),
         AppUsageItem(
-          id: 'x_twitter',
-          name: 'X (Twitter)',
-          packageName: 'com.twitter.android',
+          id: 'linkedin',
+          name: 'LinkedIn',
+          packageName: 'com.linkedin.android',
           category: AppCategory.social,
-          timeSpentMinutes: 26,
-          limitMinutes: 30, // 4 mins left -> triggers 5-min final warning!
+          timeSpentMinutes: 24,
+          limitMinutes: 45,
           notifyAt10Min: true,
           notifyAt5Min: true,
-        ),
-        AppUsageItem(
-          id: 'chrome',
-          name: 'Google Chrome',
-          packageName: 'com.android.chrome',
-          category: AppCategory.utilities,
-          timeSpentMinutes: 18,
-          limitMinutes: null, // No limit
         ),
       ],
-      dailyGoalMinutes: 240, // 4 hours
-      pickupsToday: 42,
-      hourlyUsage: [15, 32, 45, 28, 14, 0],
+      dailyGoalMinutes: 480, // 8 hours
+      pickupsToday: 56,
+      hourlyUsage: [25, 60, 95, 80, 85, 55],
     );
   }
 

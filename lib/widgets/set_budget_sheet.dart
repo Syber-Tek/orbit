@@ -102,7 +102,7 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E1F26) : const Color(0xFFF7F7F4),
               borderRadius: BorderRadius.circular(16),
@@ -110,54 +110,60 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
                 color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      onPressed: _monthlyLimit > 100
-                          ? () {
-                              HapticFeedback.selectionClick();
-                              setState(() => _monthlyLimit = (_monthlyLimit - 100).clamp(100, 20000));
-                            }
-                          : null,
-                      icon: const Icon(Icons.remove_circle_outline_rounded, size: 24),
-                    ),
                     IconButton(
                       onPressed: _monthlyLimit > 50
                           ? () {
                               HapticFeedback.selectionClick();
-                              setState(() => _monthlyLimit = (_monthlyLimit - 50).clamp(50, 20000));
+                              setState(() => _monthlyLimit = (_monthlyLimit - 50).clamp(50, 50000));
                             }
                           : null,
-                      icon: const Icon(Icons.remove_rounded, size: 20),
+                      icon: const Icon(Icons.remove_circle_outline_rounded, size: 26),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'GH₵${_monthlyLimit.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _monthlyLimit = (_monthlyLimit + 50).clamp(50, 50000));
+                      },
+                      icon: const Icon(Icons.add_circle_outline_rounded, size: 26),
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
-                Text(
-                  'GH₵${_monthlyLimit.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                const SizedBox(height: 8),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    IconButton(
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _monthlyLimit = (_monthlyLimit + 50).clamp(50, 20000));
-                      },
-                      icon: const Icon(Icons.add_rounded, size: 20),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _monthlyLimit = (_monthlyLimit + 100).clamp(50, 20000));
-                      },
-                      icon: const Icon(Icons.add_circle_outline_rounded, size: 24),
-                    ),
+                    _buildQuickStepChip('-100', () {
+                      if (_monthlyLimit > 100) setState(() => _monthlyLimit -= 100);
+                    }, isDark),
+                    const SizedBox(width: 8),
+                    _buildQuickStepChip('+100', () {
+                      setState(() => _monthlyLimit += 100);
+                    }, isDark),
+                    const SizedBox(width: 8),
+                    _buildQuickStepChip('+500', () {
+                      setState(() => _monthlyLimit += 500);
+                    }, isDark),
                   ],
                 ),
               ],
@@ -177,7 +183,7 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E1F26) : const Color(0xFFF7F7F4),
               borderRadius: BorderRadius.circular(16),
@@ -185,54 +191,60 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
                 color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
-                      onPressed: _dailyLimit > 10
-                          ? () {
-                              HapticFeedback.selectionClick();
-                              setState(() => _dailyLimit = (_dailyLimit - 10).clamp(5, 1000));
-                            }
-                          : null,
-                      icon: const Icon(Icons.remove_circle_outline_rounded, size: 24),
-                    ),
                     IconButton(
                       onPressed: _dailyLimit > 5
                           ? () {
                               HapticFeedback.selectionClick();
-                              setState(() => _dailyLimit = (_dailyLimit - 5).clamp(5, 1000));
+                              setState(() => _dailyLimit = (_dailyLimit - 5).clamp(5, 5000));
                             }
                           : null,
-                      icon: const Icon(Icons.remove_rounded, size: 20),
+                      icon: const Icon(Icons.remove_circle_outline_rounded, size: 26),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'GH₵${_dailyLimit.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _dailyLimit = (_dailyLimit + 5).clamp(5, 5000));
+                      },
+                      icon: const Icon(Icons.add_circle_outline_rounded, size: 26),
+                      visualDensity: VisualDensity.compact,
                     ),
                   ],
                 ),
-                Text(
-                  'GH₵${_dailyLimit.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                const SizedBox(height: 8),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    IconButton(
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _dailyLimit = (_dailyLimit + 5).clamp(5, 1000));
-                      },
-                      icon: const Icon(Icons.add_rounded, size: 20),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _dailyLimit = (_dailyLimit + 10).clamp(5, 1000));
-                      },
-                      icon: const Icon(Icons.add_circle_outline_rounded, size: 24),
-                    ),
+                    _buildQuickStepChip('-10', () {
+                      if (_dailyLimit > 10) setState(() => _dailyLimit -= 10);
+                    }, isDark),
+                    const SizedBox(width: 8),
+                    _buildQuickStepChip('+10', () {
+                      setState(() => _dailyLimit += 10);
+                    }, isDark),
+                    const SizedBox(width: 8),
+                    _buildQuickStepChip('+25', () {
+                      setState(() => _dailyLimit += 25);
+                    }, isDark),
                   ],
                 ),
               ],
@@ -261,6 +273,30 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStepChip(String label, VoidCallback onTap, bool isDark) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }

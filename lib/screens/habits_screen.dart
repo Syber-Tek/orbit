@@ -32,6 +32,7 @@ class HabitsScreen extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(
+          key: const PageStorageKey('habits_scroll'),
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverPadding(

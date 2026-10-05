@@ -47,6 +47,7 @@ class TasksScreen extends ConsumerWidget {
     );
 
     return CustomScrollView(
+      key: const PageStorageKey('tasks_scroll'),
       physics: const BouncingScrollPhysics(),
       slivers: [
         // Daily Progress Overview Bento Card (Image 1 & 3 inspired)

@@ -47,6 +47,7 @@ class LedgerScreen extends ConsumerWidget {
     final transactions = ledgerState.filteredTransactions;
 
     return CustomScrollView(
+      key: const PageStorageKey('ledger_scroll'),
       physics: const BouncingScrollPhysics(),
       slivers: [
         // Monthly Budget Ceiling Hero Card
