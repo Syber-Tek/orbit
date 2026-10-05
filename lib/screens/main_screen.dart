@@ -348,14 +348,14 @@ class _SettingsSheet extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.view_compact_rounded,
-                              size: 20,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                            const SizedBox(width: 10),
+                            // Icon(
+                            //   Icons.view_compact_rounded,
+                            //   size: 20,
+                            //   color: theme.colorScheme.onSurface,
+                            // ),
+                            // const SizedBox(width: 10),
                             Text(
-                              'Nav Bar Transparency',
+                              'Navbar Transparency',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
