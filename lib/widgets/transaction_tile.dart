@@ -83,31 +83,35 @@ class TransactionTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          transaction.category.label,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: transaction.category.label,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            ),
                           ),
-                        ),
-                        Text(
-                          ' · ',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                          TextSpan(
+                            text: ' · ',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                            ),
                           ),
-                        ),
-                        Text(
-                          transaction.formattedDate,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                          TextSpan(
+                            text: transaction.formattedDate,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     if (transaction.note != null && transaction.note!.isNotEmpty) ...[
                       const SizedBox(height: 3),

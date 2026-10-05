@@ -111,8 +111,8 @@ class LedgerScreen extends ConsumerWidget {
                           const SizedBox(height: 2),
                           Text(
                             ledgerState.isOverMonthlyBudget
-                                ? 'You have exceeded your \$${ledgerState.monthlyBudgetLimit.toStringAsFixed(0)} limit by \$${(ledgerState.totalExpensesThisMonth - ledgerState.monthlyBudgetLimit).toStringAsFixed(2)}.'
-                                : 'Spent \$${ledgerState.totalSpentToday.toStringAsFixed(2)} today against \$${ledgerState.dailyBudgetLimit.toStringAsFixed(0)} daily cap.',
+                                ? 'You have exceeded your GH₵${ledgerState.monthlyBudgetLimit.toStringAsFixed(0)} limit by GH₵${(ledgerState.totalExpensesThisMonth - ledgerState.monthlyBudgetLimit).toStringAsFixed(2)}.'
+                                : 'Spent GH₵${ledgerState.totalSpentToday.toStringAsFixed(2)} today against GH₵${ledgerState.dailyBudgetLimit.toStringAsFixed(0)} daily cap.',
                             style: TextStyle(
                               fontSize: 11,
                               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -136,7 +136,7 @@ class LedgerScreen extends ConsumerWidget {
                 Expanded(
                   child: _buildSummaryBox(
                     label: 'Income',
-                    amount: '+\$${ledgerState.totalIncomeThisMonth.toStringAsFixed(0)}',
+                    amount: '+GH₵${ledgerState.totalIncomeThisMonth.toStringAsFixed(0)}',
                     icon: IconlyLight.arrowDownCircle,
                     isDark: isDark,
                   ),
@@ -145,7 +145,7 @@ class LedgerScreen extends ConsumerWidget {
                 Expanded(
                   child: _buildSummaryBox(
                     label: 'Expenses',
-                    amount: '-\$${ledgerState.totalExpensesThisMonth.toStringAsFixed(0)}',
+                    amount: '-GH₵${ledgerState.totalExpensesThisMonth.toStringAsFixed(0)}',
                     icon: IconlyLight.arrowUpCircle,
                     isDark: isDark,
                   ),
@@ -154,7 +154,7 @@ class LedgerScreen extends ConsumerWidget {
                 Expanded(
                   child: _buildSummaryBox(
                     label: 'Net Balance',
-                    amount: '${ledgerState.netBalance >= 0 ? '+' : ''}\$${ledgerState.netBalance.toStringAsFixed(0)}',
+                    amount: '${ledgerState.netBalance >= 0 ? '+' : ''}GH₵${ledgerState.netBalance.toStringAsFixed(0)}',
                     icon: IconlyLight.wallet,
                     isDark: isDark,
                   ),
@@ -179,52 +179,21 @@ class LedgerScreen extends ConsumerWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'TRANSACTIONS',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  ),
-                ),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Filter Chips (All, Expenses, Income)
-                    _buildFilterPill(
-                      label: 'All',
-                      isSelected: ledgerState.filterType == null,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        ref.read(ledgerProvider.notifier).setFilter(null);
-                      },
-                      isDark: isDark,
+                    Text(
+                      'TRANSACTIONS',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      ),
                     ),
-                    const SizedBox(width: 4),
-                    _buildFilterPill(
-                      label: 'Expenses',
-                      isSelected: ledgerState.filterType == TransactionType.expense,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        ref.read(ledgerProvider.notifier).setFilter(TransactionType.expense);
-                      },
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: 4),
-                    _buildFilterPill(
-                      label: 'Income',
-                      isSelected: ledgerState.filterType == TransactionType.income,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        ref.read(ledgerProvider.notifier).setFilter(TransactionType.income);
-                      },
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: 8),
-
                     // Add Transaction Button
                     InkWell(
                       onTap: () => _openAddTransaction(context),
@@ -256,6 +225,41 @@ class LedgerScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Filter Chips (All, Expenses, Income)
+                Row(
+                  children: [
+                    _buildFilterPill(
+                      label: 'All',
+                      isSelected: ledgerState.filterType == null,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(ledgerProvider.notifier).setFilter(null);
+                      },
+                      isDark: isDark,
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFilterPill(
+                      label: 'Expenses',
+                      isSelected: ledgerState.filterType == TransactionType.expense,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(ledgerProvider.notifier).setFilter(TransactionType.expense);
+                      },
+                      isDark: isDark,
+                    ),
+                    const SizedBox(width: 6),
+                    _buildFilterPill(
+                      label: 'Income',
+                      isSelected: ledgerState.filterType == TransactionType.income,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(ledgerProvider.notifier).setFilter(TransactionType.income);
+                      },
+                      isDark: isDark,
                     ),
                   ],
                 ),
@@ -349,7 +353,7 @@ class LedgerScreen extends ConsumerWidget {
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF18191E) : Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -369,12 +373,16 @@ class LedgerScreen extends ConsumerWidget {
                 color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               ),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -383,7 +391,7 @@ class LedgerScreen extends ConsumerWidget {
           Text(
             amount,
             style: const TextStyle(
-              fontSize: 13.5,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
             ),

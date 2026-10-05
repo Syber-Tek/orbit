@@ -45,7 +45,7 @@ class TransactionItem {
   bool get isIncome => type == TransactionType.income;
 
   String get formattedAmount {
-    final prefix = isExpense ? '-\$' : '+\$';
+    final prefix = isExpense ? '-GH₵' : '+GH₵';
     return '$prefix${amount.toStringAsFixed(2)}';
   }
 

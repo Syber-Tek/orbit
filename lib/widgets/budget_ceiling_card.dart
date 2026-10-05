@@ -97,7 +97,7 @@ class BudgetCeilingCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '\$${state.totalExpensesThisMonth.toStringAsFixed(2)}',
+                      'GH₵${state.totalExpensesThisMonth.toStringAsFixed(2)}',
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         fontSize: 28,
@@ -107,7 +107,7 @@ class BudgetCeilingCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'of \$${state.monthlyBudgetLimit.toStringAsFixed(0)} monthly limit',
+                      'of GH₵${state.monthlyBudgetLimit.toStringAsFixed(0)} monthly limit',
                       style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
@@ -126,8 +126,8 @@ class BudgetCeilingCard extends StatelessWidget {
                       ),
                       child: Text(
                         state.isOverMonthlyBudget
-                            ? 'Over by \$${(state.totalExpensesThisMonth - state.monthlyBudgetLimit).toStringAsFixed(2)}'
-                            : '\$${state.monthlyRemaining.toStringAsFixed(2)} available',
+                            ? 'Over by GH₵${(state.totalExpensesThisMonth - state.monthlyBudgetLimit).toStringAsFixed(2)}'
+                            : 'GH₵${state.monthlyRemaining.toStringAsFixed(2)} available',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -162,28 +162,35 @@ class BudgetCeilingCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    IconlyLight.calendar,
-                    size: 14,
-                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Today: \$${state.totalSpentToday.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: state.isOverDailyBudget
-                          ? const Color(0xFFEF4444)
-                          : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(
+                      IconlyLight.calendar,
+                      size: 14,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Today: GH₵${state.totalSpentToday.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: state.isOverDailyBudget
+                              ? const Color(0xFFEF4444)
+                              : (isDark ? Colors.grey.shade300 : Colors.grey.shade800),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 10),
               Text(
-                'Daily Cap: \$${state.dailyBudgetLimit.toStringAsFixed(0)}',
+                'Daily Cap: GH₵${state.dailyBudgetLimit.toStringAsFixed(0)}',
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w500,

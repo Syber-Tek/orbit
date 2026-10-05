@@ -137,7 +137,7 @@ class SpendingBreakdownCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '\$${amount.toStringAsFixed(2)}',
+                    'GH₵${amount.toStringAsFixed(2)}',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       fontSize: 13.5,

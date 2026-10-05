@@ -31,7 +31,7 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Budgets updated: \$${_monthlyLimit.toStringAsFixed(0)}/mo · \$${_dailyLimit.toStringAsFixed(0)}/day',
+          'Budgets updated: GH₵${_monthlyLimit.toStringAsFixed(0)}/mo · GH₵${_dailyLimit.toStringAsFixed(0)}/day',
         ),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
@@ -136,9 +136,9 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
                   ],
                 ),
                 Text(
-                  '\$${_monthlyLimit.toStringAsFixed(0)}',
+                  'GH₵${_monthlyLimit.toStringAsFixed(0)}',
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -211,9 +211,9 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
                   ],
                 ),
                 Text(
-                  '\$${_dailyLimit.toStringAsFixed(0)}',
+                  'GH₵${_dailyLimit.toStringAsFixed(0)}',
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),

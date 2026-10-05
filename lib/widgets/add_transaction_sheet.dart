@@ -33,7 +33,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
   void _save() {
     final title = _titleController.text.trim();
-    final amountText = _amountController.text.replaceAll('\$', '').trim();
+    final amountText = _amountController.text.replaceAll('GH₵', '').replaceAll('\$', '').trim();
     final amount = double.tryParse(amountText);
 
     if (title.isEmpty) {
@@ -175,9 +175,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   Row(
                     children: [
                       Text(
-                        '\$',
+                        'GH₵',
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 24,
                           fontWeight: FontWeight.w800,
                           color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                         ),
@@ -228,7 +228,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                '+\$${preset.toStringAsFixed(0)}',
+                                '+GH₵${preset.toStringAsFixed(0)}',
                                 style: const TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
