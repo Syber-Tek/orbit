@@ -173,6 +173,16 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
     );
   }
 
+  void addApp(AppUsageItem app) {
+    state = state.copyWith(apps: [...state.apps, app]);
+  }
+
+  void deleteApp(String id) {
+    state = state.copyWith(
+      apps: state.apps.where((app) => app.id != id).toList(),
+    );
+  }
+
   void setDailyGoal(int minutes) {
     state = state.copyWith(dailyGoalMinutes: minutes);
   }

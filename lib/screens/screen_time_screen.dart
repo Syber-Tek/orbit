@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/screen_time.dart';
 import 'package:orbit/services/screen_time_provider.dart';
+import 'package:orbit/widgets/add_custom_app_sheet.dart';
 import 'package:orbit/widgets/app_limit_tile.dart';
 import 'package:orbit/widgets/app_lockout_sheet.dart';
 import 'package:orbit/widgets/focus_timer_card.dart';
@@ -17,6 +18,16 @@ class ScreenTimeScreen extends ConsumerWidget {
     super.key,
     this.onSettingsTap,
   });
+
+  void _openAddCustomApp(BuildContext context) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const AddCustomAppSheet(),
+    );
+  }
 
   void _openSetLimit(BuildContext context, AppUsageItem app) {
     HapticFeedback.lightImpact();
@@ -278,36 +289,125 @@ class ScreenTimeScreen extends ConsumerWidget {
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                   ),
                 ),
-                Text(
-                  '${screenTimeState.apps.where((a) => a.hasLimit).length} active limits',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      '${screenTimeState.apps.where((a) => a.hasLimit).length} active',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => _openAddCustomApp(context),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.black.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.add_rounded,
+                              size: 14,
+                              color: isDark ? Colors.white : const Color(0xFF18181B),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Add App',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : const Color(0xFF18181B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
 
-        // App Limits List
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final app = screenTimeState.apps[index];
-                return AppLimitTile(
-                  app: app,
-                  onTap: () => _openSetLimit(context, app),
-                  onLockedTap: () => _openLockoutSheet(context, app),
-                );
-              },
-              childCount: screenTimeState.apps.length,
+        // App Limits List or Empty State
+        if (screenTimeState.apps.isEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF18191E) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      IconlyLight.chart,
+                      size: 36,
+                      color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'No apps tracked yet',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Add a custom app to track usage and set closing alerts.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    ElevatedButton.icon(
+                      onPressed: () => _openAddCustomApp(context),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Add App'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? Colors.white : const Color(0xFF18181B),
+                        foregroundColor: isDark ? const Color(0xFF141517) : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final app = screenTimeState.apps[index];
+                  return AppLimitTile(
+                    app: app,
+                    onTap: () => _openSetLimit(context, app),
+                    onLockedTap: () => _openLockoutSheet(context, app),
+                  );
+                },
+                childCount: screenTimeState.apps.length,
+              ),
             ),
           ),
-        ),
 
         // Bottom Spacing for floating navbar
         const SliverToBoxAdapter(
