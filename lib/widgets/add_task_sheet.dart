@@ -94,6 +94,8 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     if (title.isEmpty) return;
 
     final desc = _descController.text.trim();
+    // An alarm without a time can never fire, so it is never persisted.
+    final hasAlarm = _hasAlarm && _selectedTime != null;
 
     if (widget.initialTask != null) {
       final updated = widget.initialTask!.copyWith(
@@ -101,7 +103,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
         description: desc.isEmpty ? null : desc,
         scheduledDate: _selectedDate,
         scheduledTime: _selectedTime,
-        hasAlarm: _hasAlarm,
+        hasAlarm: hasAlarm,
         priority: _priority,
         category: _category,
       );
@@ -113,7 +115,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
         description: desc.isEmpty ? null : desc,
         scheduledDate: _selectedDate,
         scheduledTime: _selectedTime,
-        hasAlarm: _hasAlarm,
+        hasAlarm: hasAlarm,
         priority: _priority,
         category: _category,
         createdAt: DateTime.now(),
@@ -123,6 +125,19 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
     HapticFeedback.mediumImpact();
     Navigator.pop(context);
+  }
+
+  /// Arming an alarm without a scheduled time would silently do nothing, so
+  /// ask for the time as part of the same interaction.
+  Future<void> _toggleAlarm() async {
+    HapticFeedback.selectionClick();
+    if (_hasAlarm) {
+      setState(() => _hasAlarm = false);
+      return;
+    }
+
+    setState(() => _hasAlarm = true);
+    if (_selectedTime == null) await _pickTime();
   }
 
   @override
@@ -331,10 +346,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
                 // Alarm Toggle
                 InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _hasAlarm = !_hasAlarm);
-                  },
+                  onTap: _toggleAlarm,
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

@@ -1,8 +1,28 @@
+import 'package:flutter/material.dart';
+
 enum HabitFrequency { daily, weekdays, weekends }
 
 enum HabitTimeOfDay { morning, afternoon, evening, anytime }
 
 class Habit {
+  /// Compile-time lookup from the persisted icon code point to its [IconData].
+  ///
+  /// The code point is stored as an int so it survives JSON, but rebuilding an
+  /// `IconData` at runtime defeats release icon tree-shaking and fails the
+  /// release build. Every reachable icon is registered here as a const.
+  static const Map<int, IconData> iconByCodePoint = <int, IconData>{
+    0xf738: Icons.favorite_rounded,
+    0xf0144: Icons.self_improvement_rounded,
+    0xf767: Icons.fitness_center_rounded,
+    0xf8b4: Icons.menu_book_rounded,
+    0xf023c: Icons.timer_rounded,
+    0xf03b4: Icons.water_drop_rounded,
+    0xf634: Icons.check_circle_outline_rounded,
+  };
+
+  static IconData iconFor(int codePoint) =>
+      iconByCodePoint[codePoint] ?? Icons.check_circle_outline_rounded;
+
   final String id;
   final String title;
   final String category;
