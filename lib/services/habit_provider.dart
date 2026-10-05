@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbit/models/habit.dart';
+import 'package:orbit/services/persistence_service.dart';
 
 class HabitListNotifier extends Notifier<List<Habit>> {
   @override
   List<Habit> build() {
-    final now = DateTime.now();
+    final saved = PersistenceService.instance.loadHabits();
+    if (saved != null) return saved;
 
+    final now = DateTime.now();
     return [
       Habit(
         id: '1',
@@ -69,18 +72,22 @@ class HabitListNotifier extends Notifier<List<Habit>> {
       }
       return habit;
     }).toList();
+    PersistenceService.instance.saveHabits(state);
   }
 
   void addHabit(Habit habit) {
     state = [habit, ...state];
+    PersistenceService.instance.saveHabits(state);
   }
 
   void updateHabit(Habit updated) {
     state = state.map((h) => h.id == updated.id ? updated : h).toList();
+    PersistenceService.instance.saveHabits(state);
   }
 
   void deleteHabit(String id) {
     state = state.where((h) => h.id != id).toList();
+    PersistenceService.instance.saveHabits(state);
   }
 }
 

@@ -12,13 +12,41 @@ import 'package:orbit/widgets/progress_dial.dart';
 import 'package:orbit/widgets/screen_time_chart.dart';
 import 'package:orbit/widgets/set_app_limit_sheet.dart';
 
-class ScreenTimeScreen extends ConsumerWidget {
+class ScreenTimeScreen extends ConsumerStatefulWidget {
   final VoidCallback? onSettingsTap;
 
   const ScreenTimeScreen({
     super.key,
     this.onSettingsTap,
   });
+
+  @override
+  ConsumerState<ScreenTimeScreen> createState() => _ScreenTimeScreenState();
+}
+
+class _ScreenTimeScreenState extends ConsumerState<ScreenTimeScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    Future.microtask(() {
+      ref.read(screenTimeProvider.notifier).refreshPermissionsAndUsage();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(screenTimeProvider.notifier).refreshPermissionsAndUsage();
+    }
+  }
 
   void _openAddCustomApp(BuildContext context) {
     HapticFeedback.lightImpact();
@@ -53,8 +81,90 @@ class ScreenTimeScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildBanner({
+    required BuildContext context,
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String message,
+    required String actionLabel,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 10, 20, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.12 : 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.3 : 0.25),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton(
+            onPressed: onTap,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              actionLabel,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -66,6 +176,53 @@ class ScreenTimeScreen extends ConsumerWidget {
       key: const PageStorageKey('screentime_scroll'),
       physics: const BouncingScrollPhysics(),
       slivers: [
+        // Permission Banners (Top of Screen Time screen)
+        if (!screenTimeState.hasUsagePermission)
+          SliverToBoxAdapter(
+            child: _buildBanner(
+              context: context,
+              icon: Icons.security_rounded,
+              color: const Color(0xFFF59E0B),
+              title: 'Usage Access Required',
+              message:
+                  'Grant usage access so Orbit can track accurate screen time and manage app allowances.',
+              actionLabel: 'Grant',
+              onTap: () =>
+                  ref.read(screenTimeProvider.notifier).openUsageSettings(),
+            ),
+          ),
+        if (!screenTimeState.hasAccessibility)
+          SliverToBoxAdapter(
+            child: _buildBanner(
+              context: context,
+              icon: Icons.block_rounded,
+              color: const Color(0xFFEF4444),
+              title: 'App Blocker Disabled',
+              message:
+                  'Enable Orbit Screen Time Blocker in Accessibility so apps are actively closed when daily limits expire.',
+              actionLabel: 'Enable',
+              onTap: () => ref
+                  .read(screenTimeProvider.notifier)
+                  .openAccessibilitySettings(),
+            ),
+          ),
+        if (screenTimeState.hasUsagePermission &&
+            screenTimeState.apps.any((a) => a.hasLimit) &&
+            !screenTimeState.isMonitorRunning)
+          SliverToBoxAdapter(
+            child: _buildBanner(
+              context: context,
+              icon: Icons.warning_amber_rounded,
+              color: const Color(0xFFF97316),
+              title: 'Monitor Service Stopped',
+              message:
+                  'The background service was stopped. Tap to resume automatic monitoring.',
+              actionLabel: 'Restart',
+              onTap: () => ref
+                  .read(screenTimeProvider.notifier)
+                  .restartMonitorService(),
+            ),
+          ),
         // Daily Screen Time Overview Bento Card (Image 1 & 3 style)
         SliverToBoxAdapter(
           child: Padding(

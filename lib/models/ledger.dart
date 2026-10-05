@@ -88,6 +88,36 @@ class TransactionItem {
       note: note ?? this.note,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'amount': amount,
+      'type': type.name,
+      'category': category.name,
+      'dateTime': dateTime.toIso8601String(),
+      'note': note,
+    };
+  }
+
+  factory TransactionItem.fromJson(Map<String, dynamic> json) {
+    return TransactionItem(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      type: TransactionType.values.firstWhere(
+        (t) => t.name == json['type'],
+        orElse: () => TransactionType.expense,
+      ),
+      category: ExpenseCategory.values.firstWhere(
+        (c) => c.name == json['category'],
+        orElse: () => ExpenseCategory.food,
+      ),
+      dateTime: DateTime.parse(json['dateTime'] as String),
+      note: json['note'] as String?,
+    );
+  }
 }
 
 class LedgerState {

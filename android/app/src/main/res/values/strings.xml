@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">Allows Orbit to close apps that have reached their daily screen time limit. It only watches which app is open and does not read any screen content.</string>
+</resources>
