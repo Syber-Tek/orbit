@@ -136,14 +136,18 @@ class ScreenTimeScreen extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(IconlyLight.chart, size: 12, color: Color(0xFF8B5CF6)),
+                              Icon(
+                                IconlyLight.chart,
+                                size: 12,
+                                color: isDark ? Colors.white : const Color(0xFF18181B),
+                              ),
                               const SizedBox(width: 5),
                               Text(
                                 '${screenTimeState.pickupsToday} pickups today',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF8B5CF6),
+                                  color: isDark ? Colors.white : const Color(0xFF18181B),
                                 ),
                               ),
                             ],
@@ -160,7 +164,7 @@ class ScreenTimeScreen extends ConsumerWidget {
                     size: 76,
                     progressColor: screenTimeState.goalProgress >= 1.0
                         ? const Color(0xFFEF4444)
-                        : const Color(0xFF8B5CF6),
+                        : (isDark ? Colors.white : const Color(0xFF18181B)),
                   ),
                 ],
               ),

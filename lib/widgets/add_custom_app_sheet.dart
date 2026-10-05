@@ -15,8 +15,6 @@ class AddCustomAppSheet extends ConsumerStatefulWidget {
 class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
   final _nameController = TextEditingController();
   AppCategory _selectedCategory = AppCategory.social;
-  int _selectedColor = 0xFF8B5CF6; // Default Purple
-  int _selectedIconCode = Icons.apps_rounded.codePoint;
   int? _limitMinutes = 60; // 1 hour default
   int _hours = 1;
   int _minutes = 0;
@@ -24,28 +22,6 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
   bool _notifyAt5Min = true;
   bool _isStrictLock = true;
   bool _showCustomStepper = false;
-
-  final List<int> _iconOptions = [
-    Icons.apps_rounded.codePoint,
-    Icons.camera_alt_rounded.codePoint,
-    Icons.play_circle_fill_rounded.codePoint,
-    Icons.chat_bubble_rounded.codePoint,
-    Icons.tag_rounded.codePoint,
-    Icons.public_rounded.codePoint,
-    Icons.videogame_asset_rounded.codePoint,
-    Icons.menu_book_rounded.codePoint,
-    Icons.music_note_rounded.codePoint,
-    Icons.code_rounded.codePoint,
-  ];
-
-  final List<int> _colorOptions = [
-    0xFF8B5CF6, // Purple
-    0xFFEC4899, // Pink
-    0xFF3B82F6, // Blue
-    0xFFFF6B2B, // Orange
-    0xFF10B981, // Emerald
-    0xFF18181B, // Charcoal / Dark
-  ];
 
   final List<int> _presetOptions = [15, 30, 45, 60, 90, 120];
 
@@ -79,8 +55,6 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
       notifyAt10Min: _notifyAt10Min,
       notifyAt5Min: _notifyAt5Min,
       isStrictLock: _isStrictLock,
-      iconCodePoint: _selectedIconCode,
-      colorValue: _selectedColor,
     );
 
     ref.read(screenTimeProvider.notifier).addApp(newApp);
@@ -246,131 +220,6 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Icon & Color Selection Row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon Selector
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'ICON',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 44,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _iconOptions.length,
-                          separatorBuilder: (context, index) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final code = _iconOptions[index];
-                            final isSelected = _selectedIconCode == code;
-                            return GestureDetector(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() => _selectedIconCode = code);
-                              },
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Color(_selectedColor).withValues(alpha: 0.25)
-                                      : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04)),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isSelected ? Color(_selectedColor) : Colors.transparent,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Icon(
-                                  IconData(code, fontFamily: 'MaterialIcons'),
-                                  size: 20,
-                                  color: isSelected
-                                      ? Color(_selectedColor)
-                                      : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 14),
-
-                // Color Selector
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'COLOR',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 44,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _colorOptions.length,
-                          separatorBuilder: (context, index) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final col = _colorOptions[index];
-                            final isSelected = _selectedColor == col;
-                            return GestureDetector(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() => _selectedColor = col);
-                              },
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Color(col),
-                                  border: Border.all(
-                                    color: isSelected ? Colors.white : Colors.transparent,
-                                    width: 2.5,
-                                  ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: Color(col).withValues(alpha: 0.5),
-                                            blurRadius: 6,
-                                          )
-                                        ]
-                                      : [],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
 
             // Daily Limit Section
             Row(

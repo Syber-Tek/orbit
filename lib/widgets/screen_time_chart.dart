@@ -48,7 +48,7 @@ class ScreenTimeChart extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF8B5CF6),
+                  color: isDark ? Colors.white : const Color(0xFF18181B),
                 ),
               ),
             ],
@@ -79,7 +79,7 @@ class ScreenTimeChart extends StatelessWidget {
                               fontSize: 9.5,
                               fontWeight: isPeak ? FontWeight.w700 : FontWeight.w500,
                               color: isPeak
-                                  ? const Color(0xFF8B5CF6)
+                                  ? (isDark ? Colors.white : const Color(0xFF18181B))
                                   : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                             ),
                           ),
@@ -92,7 +92,7 @@ class ScreenTimeChart extends StatelessWidget {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: isPeak
-                                      ? const Color(0xFF8B5CF6)
+                                      ? (isDark ? Colors.white : const Color(0xFF18181B))
                                       : (isDark
                                           ? Colors.white.withValues(alpha: 0.15)
                                           : const Color(0xFF18181B).withValues(alpha: 0.12)),

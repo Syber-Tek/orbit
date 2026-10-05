@@ -58,6 +58,8 @@ class AppUsageItem {
   final int iconCodePoint;
   final int colorValue;
 
+  static const int defaultIconCodePoint = 0xe0a0; // Icons.apps_rounded
+
   const AppUsageItem({
     required this.id,
     required this.name,
@@ -68,8 +70,8 @@ class AppUsageItem {
     this.notifyAt10Min = true,
     this.notifyAt5Min = true,
     this.isStrictLock = false,
-    required this.iconCodePoint,
-    required this.colorValue,
+    this.iconCodePoint = defaultIconCodePoint,
+    this.colorValue = 0xFF18181B,
   });
 
   bool get hasLimit => limitMinutes != null && limitMinutes! > 0;

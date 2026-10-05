@@ -73,8 +73,6 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           notifyAt10Min: true,
           notifyAt5Min: true,
           isStrictLock: true,
-          iconCodePoint: 0xe11e, // Icons.camera_alt_rounded
-          colorValue: 0xFFE1306C,
         ),
         AppUsageItem(
           id: 'tiktok',
@@ -86,8 +84,6 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           notifyAt10Min: true,
           notifyAt5Min: true,
           isStrictLock: true,
-          iconCodePoint: 0xe4d2, // Icons.play_circle_fill_rounded
-          colorValue: 0xFF000000,
         ),
         AppUsageItem(
           id: 'youtube',
@@ -98,8 +94,6 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           limitMinutes: 90,
           notifyAt10Min: true,
           notifyAt5Min: true,
-          iconCodePoint: 0xf37f, // Icons.smart_display_rounded
-          colorValue: 0xFFFF0000,
         ),
         AppUsageItem(
           id: 'x_twitter',
@@ -110,8 +104,6 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           limitMinutes: 30, // 4 mins left -> triggers 5-min final warning!
           notifyAt10Min: true,
           notifyAt5Min: true,
-          iconCodePoint: 0xe618, // Icons.tag_rounded
-          colorValue: 0xFF1DA1F2,
         ),
         AppUsageItem(
           id: 'chrome',
@@ -120,8 +112,6 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           category: AppCategory.utilities,
           timeSpentMinutes: 18,
           limitMinutes: null, // No limit
-          iconCodePoint: 0xe4f7, // Icons.public_rounded
-          colorValue: 0xFF4285F4,
         ),
       ],
       dailyGoalMinutes: 240, // 4 hours

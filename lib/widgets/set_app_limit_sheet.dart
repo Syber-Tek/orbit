@@ -132,13 +132,15 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Color(widget.app.colorValue).withValues(alpha: isDark ? 0.2 : 0.12),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Center(
                     child: Icon(
-                      IconData(widget.app.iconCodePoint, fontFamily: 'MaterialIcons'),
-                      color: Color(widget.app.colorValue),
+                      Icons.apps_rounded,
+                      color: isDark ? Colors.white : const Color(0xFF18181B),
                       size: 22,
                     ),
                   ),
