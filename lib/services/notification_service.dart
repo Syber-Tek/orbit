@@ -122,8 +122,8 @@ class NotificationService {
     tz_data.initializeTimeZones();
     await _resolveLocalTimezone();
 
-    const settings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    final settings = InitializationSettings(
+      android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
@@ -177,7 +177,7 @@ class NotificationService {
   void _onForegroundResponse(NotificationResponse response) {
     final actionId = response.actionId;
     // Empty actionId means the body was tapped, which has no meaning yet.
-    if (actionId.isEmpty) return;
+    if (actionId == null || actionId.isEmpty) return;
 
     final taskId = taskIdFromPayload(response.payload);
     if (taskId == null) return;
@@ -360,7 +360,7 @@ class NotificationService {
     return [
       AndroidNotificationAction(
         kActionSnooze,
-        'Snooze $snoozeMinutesm',
+        'Snooze ${snoozeMinutes}m',
         cancelNotification: true,
         showsUserInterface: false,
       ),
@@ -510,7 +510,7 @@ class _AlarmPrefs {
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse response) {
   final actionId = response.actionId;
-  if (actionId.isEmpty) return;
+  if (actionId == null || actionId.isEmpty) return;
 
   final taskId = NotificationService.taskIdFromPayload(response.payload);
   if (taskId == null) return;
