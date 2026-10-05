@@ -222,6 +222,28 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
     );
   }
 
+  void adjustMinutes(int delta) {
+    if (state.isRunning) return;
+    final newMinutes = (state.targetMinutes + delta).clamp(1, 180);
+    state = state.copyWith(
+      targetMinutes: newMinutes,
+      elapsedSeconds: 0,
+      isCompleted: false,
+    );
+  }
+
+  void setCustomMinutes(int minutes, {String? title}) {
+    _timer?.cancel();
+    state = FocusSession(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title ?? state.title,
+      targetMinutes: minutes.clamp(1, 180),
+      elapsedSeconds: 0,
+      isRunning: false,
+      isCompleted: false,
+    );
+  }
+
   void start() {
     if (state.isRunning) return;
     state = state.copyWith(isRunning: true);

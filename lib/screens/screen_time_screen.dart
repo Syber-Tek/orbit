@@ -8,6 +8,7 @@ import 'package:orbit/widgets/add_custom_app_sheet.dart';
 import 'package:orbit/widgets/app_limit_tile.dart';
 import 'package:orbit/widgets/app_lockout_sheet.dart';
 import 'package:orbit/widgets/focus_timer_card.dart';
+import 'package:orbit/widgets/progress_dial.dart';
 import 'package:orbit/widgets/screen_time_chart.dart';
 import 'package:orbit/widgets/set_app_limit_sheet.dart';
 
@@ -153,36 +154,13 @@ class ScreenTimeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 16),
 
-                  // Large Circular Progress Dial (Matching Tasks Dial: 76x76)
-                  SizedBox(
-                    width: 76,
-                    height: 76,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          value: screenTimeState.goalProgress,
-                          strokeWidth: 8,
-                          strokeCap: StrokeCap.round,
-                          backgroundColor: isDark
-                              ? const Color(0xFF272830)
-                              : const Color(0xFFE5E5DF),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            screenTimeState.goalProgress >= 1.0
-                                ? const Color(0xFFEF4444)
-                                : const Color(0xFF8B5CF6),
-                          ),
-                        ),
-                        Text(
-                          '${(screenTimeState.goalProgress * 100).toInt()}%',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Large Circular Progress Dial
+                  ProgressDial(
+                    value: screenTimeState.goalProgress,
+                    size: 76,
+                    progressColor: screenTimeState.goalProgress >= 1.0
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF8B5CF6),
                   ),
                 ],
               ),

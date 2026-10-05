@@ -5,6 +5,7 @@ import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/task.dart';
 import 'package:orbit/services/task_provider.dart';
 import 'package:orbit/widgets/add_task_sheet.dart';
+import 'package:orbit/widgets/progress_dial.dart';
 import 'package:orbit/widgets/task_item_card.dart';
 
 class TasksScreen extends ConsumerWidget {
@@ -134,35 +135,10 @@ class TasksScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 16),
 
-                  // Large Circular Progress Dial (Ref Image 1)
-                  SizedBox(
-                    width: 76,
-                    height: 76,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          value: stats.rate,
-                          strokeWidth: 6,
-                          strokeCap: StrokeCap.round,
-                          backgroundColor: isDark
-                              ? const Color(0xFF272830)
-                              : const Color(0xFFE5E5DF),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isDark ? Colors.white : const Color(0xFF18181B),
-                          ),
-                        ),
-                        Text(
-                          '${(stats.rate * 100).toInt()}%',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Large Circular Progress Dial
+                  ProgressDial(
+                    value: stats.rate,
+                    size: 76,
                   ),
                 ],
               ),
