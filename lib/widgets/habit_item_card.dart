@@ -6,11 +6,7 @@ class HabitItemCard extends StatelessWidget {
   final Habit habit;
   final VoidCallback onToggle;
 
-  const HabitItemCard({
-    super.key,
-    required this.habit,
-    required this.onToggle,
-  });
+  const HabitItemCard({super.key, required this.habit, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +22,8 @@ class HabitItemCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDone
             ? (isDark
-                ? const Color(0xFF16171B).withValues(alpha: 0.7)
-                : const Color(0xFFF6F6F2))
+                  ? const Color(0xFF16171B).withValues(alpha: 0.7)
+                  : const Color(0xFFF6F6F2))
             : (isDark ? const Color(0xFF18191E) : Colors.white),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
@@ -36,17 +32,6 @@ class HabitItemCard extends StatelessWidget {
               : (isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF)),
           width: 1.2,
         ),
-        boxShadow: isDone
-            ? []
-            : [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.25)
-                      : Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
       ),
       child: Row(
         children: [
@@ -81,7 +66,9 @@ class HabitItemCard extends StatelessWidget {
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     decoration: isDone ? TextDecoration.lineThrough : null,
-                    decorationColor: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                    decorationColor: isDark
+                        ? Colors.grey.shade600
+                        : Colors.grey.shade400,
                     color: isDone
                         ? (isDark ? Colors.grey.shade500 : Colors.grey.shade500)
                         : theme.colorScheme.onSurface,
@@ -95,7 +82,9 @@ class HabitItemCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -104,7 +93,9 @@ class HabitItemCard extends StatelessWidget {
                       height: 3,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                        color: isDark
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade400,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -148,27 +139,16 @@ class HabitItemCard extends StatelessWidget {
                 color: isDone
                     ? (isDark ? Colors.white : const Color(0xFF18181B))
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.black.withValues(alpha: 0.04)),
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.04)),
                 border: Border.all(
                   color: isDone
                       ? Colors.transparent
                       : (isDark
-                          ? const Color(0xFF383A44)
-                          : const Color(0xFFD4D4CE)),
+                            ? const Color(0xFF383A44)
+                            : const Color(0xFFD4D4CE)),
                   width: 1.8,
                 ),
-                boxShadow: isDone
-                    ? [
-                        BoxShadow(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.2)
-                              : Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : [],
               ),
               child: Center(
                 child: AnimatedScale(

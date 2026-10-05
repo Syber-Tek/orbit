@@ -25,7 +25,7 @@ class DailyPulseRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'ORBIT PULSE',
+              'Orbit Pulse',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -106,7 +106,7 @@ class DailyPulseRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
@@ -136,9 +136,7 @@ class DailyPulseRow extends StatelessWidget {
                   color: accentColor.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Center(
-                  child: Icon(icon, color: accentColor, size: 17),
-                ),
+                child: Center(child: Icon(icon, color: accentColor, size: 17)),
               ),
               const SizedBox(height: 12),
               Text(

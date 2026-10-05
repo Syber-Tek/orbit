@@ -23,21 +23,11 @@ class StreakHeroCard extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF18191E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
           color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
           width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.4)
-                : Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            spreadRadius: 0,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -77,26 +67,38 @@ class StreakHeroCard extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF131417)
-                  : const Color(0xFFF4F4F0),
+              color: isDark ? const Color(0xFF131417) : const Color(0xFFF4F4F0),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(7, (index) {
                 final dayDate = currentWeekStart.add(Duration(days: index));
-                final isToday = dayDate.day == now.day &&
+                final isToday =
+                    dayDate.day == now.day &&
                     dayDate.month == now.month &&
                     dayDate.year == now.year;
-                final isPast = dayDate.isBefore(DateTime(now.year, now.month, now.day));
+                final isPast = dayDate.isBefore(
+                  DateTime(now.year, now.month, now.day),
+                );
 
-                const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                const dayLabels = [
+                  'Mon',
+                  'Tue',
+                  'Wed',
+                  'Thu',
+                  'Fri',
+                  'Sat',
+                  'Sun',
+                ];
                 final label = dayLabels[index];
 
                 // Check if any habit was completed on this day
-                final dateKey = '${dayDate.year}-${dayDate.month.toString().padLeft(2, '0')}-${dayDate.day.toString().padLeft(2, '0')}';
-                final isCompleted = habits.any((h) => h.completedDates.contains(dateKey));
+                final dateKey =
+                    '${dayDate.year}-${dayDate.month.toString().padLeft(2, '0')}-${dayDate.day.toString().padLeft(2, '0')}';
+                final isCompleted = habits.any(
+                  (h) => h.completedDates.contains(dateKey),
+                );
 
                 return Column(
                   children: [
@@ -107,7 +109,9 @@ class StreakHeroCard extends ConsumerWidget {
                         fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                         color: isToday
                             ? (isDark ? Colors.white : Colors.black)
-                            : (isDark ? Colors.grey.shade500 : Colors.grey.shade600),
+                            : (isDark
+                                  ? Colors.grey.shade500
+                                  : Colors.grey.shade600),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -130,7 +134,7 @@ class StreakHeroCard extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'TODAY\'S PROGRESS',
+                'Today\'s Progress',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -207,10 +211,7 @@ class StreakHeroCard extends ConsumerWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.transparent,
-          border: Border.all(
-            color: const Color(0xFFFF6B2B),
-            width: 2,
-          ),
+          border: Border.all(color: const Color(0xFFFF6B2B), width: 2),
         ),
         child: Center(
           child: Container(

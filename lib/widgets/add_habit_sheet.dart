@@ -121,7 +121,7 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
             const SizedBox(height: 18),
 
             // Category Chips
-            Text('CATEGORY', style: _labelStyle(isDark)),
+            Text('Category', style: _labelStyle(isDark)),
             const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -176,7 +176,7 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
                 }).toList(),
               ),
             ),
-            Text('TIME OF DAY', style: _labelStyle(isDark)),
+            Text('Time of Day', style: _labelStyle(isDark)),
             const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -201,7 +201,7 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('DAILY TARGET', style: _labelStyle(isDark)),
+                      Text('Daily Target', style: _labelStyle(isDark)),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _targetController,
@@ -216,7 +216,7 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('UNIT', style: _labelStyle(isDark)),
+                      Text('Unit', style: _labelStyle(isDark)),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _unitController,
