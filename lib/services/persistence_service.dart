@@ -1,17 +1,17 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:orbit/models/habit.dart';
+import 'package:orbit/models/ledger.dart';
+import 'package:orbit/models/note.dart';
 import 'package:orbit/models/screen_time.dart';
 import 'package:orbit/models/task.dart';
 import 'package:orbit/services/screen_time_provider.dart' show ScreenTimeState;
 
-/// JSON-backed persistence for the state that must outlive a process restart.
+/// Centralized offline persistence for all Orbit features.
 ///
-/// Alarms are the hard requirement: an OS-scheduled notification is only
-/// meaningful if the task it belongs to is still there on next launch, and the
-/// screen time limits decide which warnings are pending.
+/// Keeps Habits, Tasks/Alarms, Ledger, Notes, and Screen Time limits
+/// persistent across app restarts and device reboots.
 class PersistenceService {
   PersistenceService._();
 
@@ -19,18 +19,59 @@ class PersistenceService {
 
   static const _kTasksKey = 'orbit.tasks.v1';
   static const _kScreenTimeKey = 'orbit.screen_time.v1';
+  static const _kHabitsKey = 'orbit.habits.v1';
+  static const _kTransactionsKey = 'orbit.transactions.v1';
+  static const _kMonthlyBudgetKey = 'orbit.monthly_budget.v1';
+  static const _kDailyBudgetKey = 'orbit.daily_budget.v1';
+  static const _kNotesKey = 'orbit.notes.v1';
+  static const _kNativeAppLimitsKey = 'app_limits_json';
 
   SharedPreferences? _prefs;
 
-  Future<SharedPreferences> _open() async {
+  Future<SharedPreferences> init() async {
     return _prefs ??= await SharedPreferences.getInstance();
+  }
+
+  SharedPreferences get prefs {
+    if (_prefs == null) {
+      throw StateError('PersistenceService must be initialized before use.');
+    }
+    return _prefs!;
+  }
+
+  // --- Habits ---
+
+  List<Habit>? loadHabits() {
+    try {
+      final raw = _prefs?.getString(_kHabitsKey);
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .map((e) => Habit.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (error) {
+      debugPrint('Failed to decode stored habits: $error');
+      return null;
+    }
+  }
+
+  Future<void> saveHabits(List<Habit> habits) async {
+    try {
+      final p = _prefs ?? await init();
+      await p.setString(
+        _kHabitsKey,
+        jsonEncode(habits.map((h) => h.toJson()).toList()),
+      );
+    } catch (error) {
+      debugPrint('Failed to save habits: $error');
+    }
   }
 
   // --- Tasks ---
 
   Future<List<TaskItem>> loadTasks() async {
-    final prefs = await _open();
-    final raw = prefs.getString(_kTasksKey);
+    final p = _prefs ?? await init();
+    final raw = p.getString(_kTasksKey);
     if (raw == null || raw.isEmpty) return const [];
 
     try {
@@ -45,20 +86,96 @@ class PersistenceService {
   }
 
   Future<void> saveTasks(List<TaskItem> tasks) async {
-    final prefs = await _open();
-    await prefs.setString(
-      _kTasksKey,
-      jsonEncode(tasks.map((task) => task.toJson()).toList()),
-    );
+    try {
+      final p = _prefs ?? await init();
+      await p.setString(
+        _kTasksKey,
+        jsonEncode(tasks.map((task) => task.toJson()).toList()),
+      );
+    } catch (error) {
+      debugPrint('Failed to save tasks: $error');
+    }
+  }
+
+  // --- Ledger / Budget ---
+
+  List<TransactionItem>? loadTransactions() {
+    try {
+      final raw = _prefs?.getString(_kTransactionsKey);
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .map((e) => TransactionItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (error) {
+      debugPrint('Failed to decode stored transactions: $error');
+      return null;
+    }
+  }
+
+  Future<void> saveTransactions(List<TransactionItem> items) async {
+    try {
+      final p = _prefs ?? await init();
+      await p.setString(
+        _kTransactionsKey,
+        jsonEncode(items.map((i) => i.toJson()).toList()),
+      );
+    } catch (error) {
+      debugPrint('Failed to save transactions: $error');
+    }
+  }
+
+  double? loadMonthlyBudget() {
+    return _prefs?.getDouble(_kMonthlyBudgetKey);
+  }
+
+  Future<void> saveMonthlyBudget(double amount) async {
+    final p = _prefs ?? await init();
+    await p.setDouble(_kMonthlyBudgetKey, amount);
+  }
+
+  double? loadDailyBudget() {
+    return _prefs?.getDouble(_kDailyBudgetKey);
+  }
+
+  Future<void> saveDailyBudget(double amount) async {
+    final p = _prefs ?? await init();
+    await p.setDouble(_kDailyBudgetKey, amount);
+  }
+
+  // --- Notes ---
+
+  List<Note>? loadNotes() {
+    try {
+      final raw = _prefs?.getString(_kNotesKey);
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded
+          .map((e) => Note.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (error) {
+      debugPrint('Failed to decode stored notes: $error');
+      return null;
+    }
+  }
+
+  Future<void> saveNotes(List<Note> notes) async {
+    try {
+      final p = _prefs ?? await init();
+      await p.setString(
+        _kNotesKey,
+        jsonEncode(notes.map((n) => n.toJson()).toList()),
+      );
+    } catch (error) {
+      debugPrint('Failed to save notes: $error');
+    }
   }
 
   // --- Screen time ---
 
-  /// Returns null when nothing has been stored yet, which lets the caller fall
-  /// back to the seeded defaults.
   Future<ScreenTimeState?> loadScreenTime() async {
-    final prefs = await _open();
-    final raw = prefs.getString(_kScreenTimeKey);
+    final p = _prefs ?? await init();
+    final raw = p.getString(_kScreenTimeKey);
     if (raw == null || raw.isEmpty) return null;
 
     try {
@@ -83,15 +200,40 @@ class PersistenceService {
   }
 
   Future<void> saveScreenTime(ScreenTimeState state) async {
-    final prefs = await _open();
-    await prefs.setString(
-      _kScreenTimeKey,
-      jsonEncode({
-        'apps': state.apps.map((app) => app.toJson()).toList(),
-        'dailyGoalMinutes': state.dailyGoalMinutes,
-        'pickupsToday': state.pickupsToday,
-        'hourlyUsage': state.hourlyUsage,
-      }),
-    );
+    try {
+      final p = _prefs ?? await init();
+      await p.setString(
+        _kScreenTimeKey,
+        jsonEncode({
+          'apps': state.apps.map((app) => app.toJson()).toList(),
+          'dailyGoalMinutes': state.dailyGoalMinutes,
+          'pickupsToday': state.pickupsToday,
+          'hourlyUsage': state.hourlyUsage,
+        }),
+      );
+      await syncLimitsToNative(state.apps);
+    } catch (error) {
+      debugPrint('Failed to save screen time: $error');
+    }
+  }
+
+  /// Mirrors configured app limits to [app_limits_json] for the Kotlin
+  /// AppMonitorService and ScreenTimeAccessibilityService background daemons.
+  Future<void> syncLimitsToNative(List<AppUsageItem> apps) async {
+    try {
+      final p = _prefs ?? await init();
+      final nativeLimits = apps
+          .where((a) => a.hasLimit)
+          .map((a) => {
+                'packageName': a.packageName,
+                'appName': a.name,
+                'limitMinutes': a.limitMinutes ?? 0,
+                'isEnabled': true,
+              })
+          .toList();
+      await p.setString(_kNativeAppLimitsKey, jsonEncode(nativeLimits));
+    } catch (error) {
+      debugPrint('Failed to sync limits to native mirror: $error');
+    }
   }
 }

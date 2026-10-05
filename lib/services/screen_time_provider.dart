@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbit/models/screen_time.dart';
 import 'package:orbit/services/notification_service.dart';
@@ -9,12 +11,18 @@ class ScreenTimeState {
   final int dailyGoalMinutes;
   final int pickupsToday;
   final List<int> hourlyUsage; // 6 intervals (6am, 9am, 12pm, 3pm, 6pm, 9pm)
+  final bool hasUsagePermission;
+  final bool hasAccessibility;
+  final bool isMonitorRunning;
 
   const ScreenTimeState({
     required this.apps,
     this.dailyGoalMinutes = 240, // 4 hours
     this.pickupsToday = 0,
     this.hourlyUsage = const [0, 0, 0, 0, 0, 0],
+    this.hasUsagePermission = false,
+    this.hasAccessibility = false,
+    this.isMonitorRunning = false,
   });
 
   int get totalMinutesSpent =>
@@ -50,17 +58,26 @@ class ScreenTimeState {
     int? dailyGoalMinutes,
     int? pickupsToday,
     List<int>? hourlyUsage,
+    bool? hasUsagePermission,
+    bool? hasAccessibility,
+    bool? isMonitorRunning,
   }) {
     return ScreenTimeState(
       apps: apps ?? this.apps,
       dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
       pickupsToday: pickupsToday ?? this.pickupsToday,
       hourlyUsage: hourlyUsage ?? this.hourlyUsage,
+      hasUsagePermission: hasUsagePermission ?? this.hasUsagePermission,
+      hasAccessibility: hasAccessibility ?? this.hasAccessibility,
+      isMonitorRunning: isMonitorRunning ?? this.isMonitorRunning,
     );
   }
 }
 
 class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
+  static const MethodChannel _platform = MethodChannel('com.example.orbit/usage_stats');
+  Timer? _pollTimer;
+
   /// Tracks which threshold warnings have already fired today so a single
   /// crossing does not produce repeated notifications.
   final Set<String> _firedWarnings = {};
@@ -72,6 +89,17 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
   @override
   ScreenTimeState build() {
     unawaited(_restore());
+
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      refreshPermissionsAndUsage();
+    });
+
+    ref.onDispose(() {
+      _pollTimer?.cancel();
+    });
+
+    Future.microtask(() => refreshPermissionsAndUsage());
+
     return const ScreenTimeState(
       apps: [
         AppUsageItem(
@@ -147,7 +175,87 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
 
   Future<void> _restore() async {
     final stored = await PersistenceService.instance.loadScreenTime();
-    if (stored != null) state = stored;
+    if (stored != null) {
+      state = stored;
+    }
+  }
+
+  /// Polls real OS usage stats and system permission statuses from the native Kotlin engine.
+  Future<void> refreshPermissionsAndUsage() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      final hasUsage =
+          await _platform.invokeMethod<bool>('checkUsagePermission') ?? false;
+      final hasA11y =
+          await _platform.invokeMethod<bool>('checkAccessibilityEnabled') ??
+              false;
+      final isRunning =
+          await _platform.invokeMethod<bool>('isMonitorServiceRunning') ??
+              false;
+
+      Map<String, int> nativeUsage = {};
+      if (hasUsage) {
+        final rawMap = await _platform
+            .invokeMethod<Map<Object?, Object?>>('getTodayUsageStats');
+        if (rawMap != null) {
+          nativeUsage = rawMap.map(
+            (k, v) => MapEntry(k.toString(), (v as num).toInt()),
+          );
+        }
+      }
+
+      final updatedApps = state.apps.map((app) {
+        final used = nativeUsage[app.packageName];
+        if (used != null) {
+          return app.copyWith(timeSpentMinutes: used);
+        }
+        return app;
+      }).toList();
+
+      state = state.copyWith(
+        apps: updatedApps,
+        hasUsagePermission: hasUsage,
+        hasAccessibility: hasA11y,
+        isMonitorRunning: isRunning,
+      );
+
+      // If user enabled limits and granted usage access, make sure monitor service is running
+      if (hasUsage && state.apps.any((a) => a.hasLimit) && !isRunning) {
+        await _platform.invokeMethod<bool>('startMonitorService');
+      }
+    } catch (e) {
+      debugPrint('ScreenTimeNotifier.refreshPermissionsAndUsage error: $e');
+    }
+  }
+
+  Future<void> openUsageSettings() async {
+    try {
+      await _platform.invokeMethod('openUsageSettings');
+    } catch (e) {
+      debugPrint('openUsageSettings error: $e');
+    }
+  }
+
+  Future<void> openAccessibilitySettings() async {
+    try {
+      await _platform.invokeMethod('openAccessibilitySettings');
+    } catch (e) {
+      debugPrint('openAccessibilitySettings error: $e');
+    }
+  }
+
+  Future<void> restartMonitorService() async {
+    try {
+      await _platform.invokeMethod('startMonitorService');
+      await refreshPermissionsAndUsage();
+    } catch (e) {
+      debugPrint('restartMonitorService error: $e');
+    }
+  }
+
+  bool isLimitLocked(String id) {
+    final app = state.apps.where((a) => a.id == id).firstOrNull;
+    return app?.isLocked ?? false;
   }
 
   void setAppLimit(
@@ -157,6 +265,11 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
     bool? notifyAt5Min,
     bool? isStrictLock,
   }) {
+    if (isLimitLocked(id)) {
+      debugPrint('Cannot change limit: app $id is locked until midnight');
+      return;
+    }
+
     state = state.copyWith(
       apps: state.apps.map((app) {
         if (app.id != id) return app;

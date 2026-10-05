@@ -1,22 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbit/models/note.dart';
+import 'package:orbit/services/persistence_service.dart';
 
 class NoteListNotifier extends Notifier<List<Note>> {
   @override
   List<Note> build() {
-    return const [];
+    return PersistenceService.instance.loadNotes() ?? const [];
   }
 
   void addNote(Note note) {
     state = [note, ...state];
+    PersistenceService.instance.saveNotes(state);
   }
 
   void updateNote(Note updated) {
     state = state.map((n) => n.id == updated.id ? updated : n).toList();
+    PersistenceService.instance.saveNotes(state);
   }
 
   void deleteNote(String id) {
     state = state.where((n) => n.id != id).toList();
+    PersistenceService.instance.saveNotes(state);
   }
 }
 
