@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
+import 'package:orbit/models/task.dart';
 import 'package:orbit/services/ledger_provider.dart';
 import 'package:orbit/services/screen_time_provider.dart';
+import 'package:orbit/services/task_provider.dart';
 
 class DailyPulseRow extends ConsumerWidget {
+  static const List<String> _weekdayLabels = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
   final VoidCallback? onScreenTimeTap;
   final VoidCallback? onAlarmsTap;
   final VoidCallback? onBudgetTap;
@@ -23,6 +35,9 @@ class DailyPulseRow extends ConsumerWidget {
 
     final screenTime = ref.watch(screenTimeProvider);
     final ledger = ref.watch(ledgerProvider);
+    final nextAlarm = ref.watch(nextAlarmProvider);
+
+    final (alarmValue, alarmSubtitle) = _describeNextAlarm(context, nextAlarm);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,8 +88,8 @@ class DailyPulseRow extends ConsumerWidget {
                 icon: IconlyLight.timeCircle,
                 accentColor: isDark ? Colors.white : const Color(0xFF18181B),
                 title: 'Next Alarm',
-                value: '07:00 AM',
-                subtitle: 'Tomorrow morning',
+                value: alarmValue,
+                subtitle: alarmSubtitle,
                 onTap: onAlarmsTap,
               ),
             ),
@@ -96,6 +111,35 @@ class DailyPulseRow extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// Resolves the "Next Alarm" card copy from the real armed task alarm.
+  /// Falls back to a muted empty state when nothing is scheduled.
+  (String, String) _describeNextAlarm(BuildContext context, TaskItem? task) {
+    final time = task?.scheduledTime;
+    if (task == null || time == null) return ('--:--', 'No alarms set');
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(
+      task.scheduledDate.year,
+      task.scheduledDate.month,
+      task.scheduledDate.day,
+    );
+    final dayGap = day.difference(today).inDays;
+
+    final String when;
+    if (dayGap == 0) {
+      when = 'Today';
+    } else if (dayGap == 1) {
+      when = 'Tomorrow';
+    } else if (dayGap > 1 && dayGap < 7) {
+      when = _weekdayLabels[task.scheduledDate.weekday - 1];
+    } else {
+      when = '${task.scheduledDate.day}/${task.scheduledDate.month}';
+    }
+
+    return (time.format(context), when);
   }
 
   Widget _buildBentoCard({

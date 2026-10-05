@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbit/models/screen_time.dart';
+import 'package:orbit/services/notification_service.dart';
+import 'package:orbit/services/persistence_service.dart';
 
 class ScreenTimeState {
   final List<AppUsageItem> apps;
@@ -59,8 +61,17 @@ class ScreenTimeState {
 }
 
 class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
+  /// Tracks which threshold warnings have already fired today so a single
+  /// crossing does not produce repeated notifications.
+  final Set<String> _firedWarnings = {};
+
+  /// Remaining-minutes thresholds that trigger a warning.
+  static const int _warnAtTen = 10;
+  static const int _warnAtFive = 5;
+
   @override
   ScreenTimeState build() {
+    unawaited(_restore());
     return const ScreenTimeState(
       apps: [
         AppUsageItem(
@@ -134,6 +145,11 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
     );
   }
 
+  Future<void> _restore() async {
+    final stored = await PersistenceService.instance.loadScreenTime();
+    if (stored != null) state = stored;
+  }
+
   void setAppLimit(
     String id,
     int? limitMinutes, {
@@ -152,6 +168,9 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
         );
       }).toList(),
     );
+    // A new limit restarts the countdown, so warnings may fire again.
+    _firedWarnings.removeWhere((key) => key.startsWith('$id:'));
+    unawaited(_persist());
   }
 
   void grantEmergencyTime(String id, {int extensionMinutes = 5}) {
@@ -164,9 +183,14 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
         );
       }).toList(),
     );
+    _firedWarnings.removeWhere((key) => key.startsWith('$id:'));
+    unawaited(_persist());
   }
 
   void addMinutesToApp(String id, int minutes) {
+    final before = state.apps.where((app) => app.id == id).firstOrNull;
+    if (before == null) return;
+
     state = state.copyWith(
       apps: state.apps.map((app) {
         if (app.id != id) return app;
@@ -175,21 +199,63 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
         );
       }).toList(),
     );
+
+    final after = state.apps.where((app) => app.id == id).firstOrNull;
+    if (after != null) unawaited(_notifyOnCrossing(before, after));
+    unawaited(_persist());
+  }
+
+  /// Posts a real OS notification when usage moves past the 10, 5 or lock
+  /// threshold, so the warning reaches the user even when the app is
+  /// backgrounded.
+  Future<void> _notifyOnCrossing(AppUsageItem before, AppUsageItem after) async {
+    if (!after.hasLimit) return;
+
+    final wasRemaining = before.remainingMinutes;
+    final remaining = after.remainingMinutes;
+
+    if (!before.isLocked && after.isLocked) {
+      if (_firedWarnings.add('${after.id}:locked')) {
+        await after.notifyLimitWarning();
+      }
+      return;
+    }
+
+    if (after.notifyAt5Min &&
+        wasRemaining > _warnAtFive &&
+        remaining <= _warnAtFive &&
+        _firedWarnings.add('${after.id}:$_warnAtFive')) {
+      await after.notifyLimitWarning();
+      return;
+    }
+
+    if (after.notifyAt10Min &&
+        wasRemaining > _warnAtTen &&
+        remaining <= _warnAtTen &&
+        _firedWarnings.add('${after.id}:$_warnAtTen')) {
+      await after.notifyLimitWarning();
+    }
   }
 
   void addApp(AppUsageItem app) {
     state = state.copyWith(apps: [...state.apps, app]);
+    unawaited(_persist());
   }
 
   void deleteApp(String id) {
     state = state.copyWith(
       apps: state.apps.where((app) => app.id != id).toList(),
     );
+    _firedWarnings.removeWhere((key) => key.startsWith('$id:'));
+    unawaited(_persist());
   }
 
   void setDailyGoal(int minutes) {
     state = state.copyWith(dailyGoalMinutes: minutes);
+    unawaited(_persist());
   }
+
+  Future<void> _persist() => PersistenceService.instance.saveScreenTime(state);
 }
 
 final screenTimeProvider =

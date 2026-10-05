@@ -80,7 +80,7 @@ class HabitItemCard extends StatelessWidget {
             ),
             child: Center(
               child: Icon(
-                IconData(habit.iconCodePoint, fontFamily: 'MaterialIcons'),
+                Habit.iconFor(habit.iconCodePoint),
                 color: isDone
                     ? accentColor.withValues(alpha: 0.5)
                     : accentColor,

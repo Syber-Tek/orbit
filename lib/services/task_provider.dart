@@ -1,34 +1,65 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbit/models/task.dart';
+import 'package:orbit/services/notification_service.dart';
+import 'package:orbit/services/persistence_service.dart';
 
 enum TaskFilter { all, todo, done, highPriority }
 
 class TaskListNotifier extends Notifier<List<TaskItem>> {
   @override
   List<TaskItem> build() {
+    // Restored asynchronously so existing call sites keep watching a plain
+    // List<TaskItem> rather than an AsyncValue.
+    unawaited(_restore());
     return const [];
   }
 
+  Future<void> _restore() async {
+    final tasks = await PersistenceService.instance.loadTasks();
+    if (tasks.isEmpty) return;
+    state = tasks;
+    // Re-arm the OS queue: alarms do not survive a force-close or reinstall.
+    await NotificationService.instance.syncTaskAlarms(tasks);
+  }
+
   void toggleTask(String id) {
-    state = state.map((task) {
-      if (task.id == id) {
-        return task.copyWith(isCompleted: !task.isCompleted);
-      }
-      return task;
+    final updated = state.map((task) {
+      if (task.id != id) return task;
+      return task.copyWith(isCompleted: !task.isCompleted);
     }).toList();
+
+    state = updated;
+    unawaited(_persist());
+
+    final task = updated.firstWhere((t) => t.id == id);
+    unawaited(NotificationService.instance.scheduleTaskAlarm(task));
   }
 
   void addTask(TaskItem task) {
     state = [task, ...state];
+    unawaited(_persist());
+    unawaited(NotificationService.instance.scheduleTaskAlarm(task));
   }
 
   void updateTask(TaskItem updatedTask) {
-    state = state.map((task) => task.id == updatedTask.id ? updatedTask : task).toList();
+    state = state
+        .map((task) => task.id == updatedTask.id ? updatedTask : task)
+        .toList();
+    unawaited(_persist());
+    unawaited(
+      NotificationService.instance.scheduleTaskAlarm(updatedTask),
+    );
   }
 
   void deleteTask(String id) {
     state = state.where((task) => task.id != id).toList();
+    unawaited(_persist());
+    unawaited(NotificationService.instance.cancelTaskAlarm(id));
   }
+
+  Future<void> _persist() => PersistenceService.instance.saveTasks(state);
 }
 
 final taskListProvider = NotifierProvider<TaskListNotifier, List<TaskItem>>(
@@ -109,6 +140,49 @@ final taskCountByDateProvider = Provider<Map<String, int>>((ref) {
     map[key] = (map[key] ?? 0) + 1;
   }
   return map;
+});
+
+/// The next task whose alarm is armed and still in the future, across all days.
+/// Drives the "Next Alarm" card on the home page.
+final nextAlarmProvider = Provider<TaskItem?>((ref) {
+  final tasks = ref.watch(taskListProvider);
+
+  final upcoming = tasks.where((task) {
+    final time = task.scheduledTime;
+    if (!task.hasAlarm || task.isCompleted || time == null) return false;
+
+    final now = DateTime.now();
+    final fire = DateTime(
+      task.scheduledDate.year,
+      task.scheduledDate.month,
+      task.scheduledDate.day,
+      time.hour,
+      time.minute,
+    );
+    return fire.isAfter(now);
+  }).toList();
+
+  if (upcoming.isEmpty) return null;
+  upcoming.sort((a, b) {
+    final at = a.scheduledTime!;
+    final bt = b.scheduledTime!;
+    final ad = DateTime(
+      a.scheduledDate.year,
+      a.scheduledDate.month,
+      a.scheduledDate.day,
+      at.hour,
+      at.minute,
+    );
+    final bd = DateTime(
+      b.scheduledDate.year,
+      b.scheduledDate.month,
+      b.scheduledDate.day,
+      bt.hour,
+      bt.minute,
+    );
+    return ad.compareTo(bd);
+  });
+  return upcoming.first;
 });
 
 class TaskStats {
