@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:orbit/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/ledger.dart';
@@ -19,7 +19,7 @@ class LedgerScreen extends ConsumerWidget {
   });
 
   void _openAddTransaction(BuildContext context) {
-    HapticFeedback.lightImpact();
+    AppHaptics.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -29,7 +29,7 @@ class LedgerScreen extends ConsumerWidget {
   }
 
   void _openSetBudget(BuildContext context) {
-    HapticFeedback.lightImpact();
+    AppHaptics.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -237,7 +237,7 @@ class LedgerScreen extends ConsumerWidget {
                       label: 'All',
                       isSelected: ledgerState.filterType == null,
                       onTap: () {
-                        HapticFeedback.selectionClick();
+                        AppHaptics.selectionClick();
                         ref.read(ledgerProvider.notifier).setFilter(null);
                       },
                       isDark: isDark,
@@ -247,7 +247,7 @@ class LedgerScreen extends ConsumerWidget {
                       label: 'Expenses',
                       isSelected: ledgerState.filterType == TransactionType.expense,
                       onTap: () {
-                        HapticFeedback.selectionClick();
+                        AppHaptics.selectionClick();
                         ref.read(ledgerProvider.notifier).setFilter(TransactionType.expense);
                       },
                       isDark: isDark,
@@ -257,7 +257,7 @@ class LedgerScreen extends ConsumerWidget {
                       label: 'Income',
                       isSelected: ledgerState.filterType == TransactionType.income,
                       onTap: () {
-                        HapticFeedback.selectionClick();
+                        AppHaptics.selectionClick();
                         ref.read(ledgerProvider.notifier).setFilter(TransactionType.income);
                       },
                       isDark: isDark,

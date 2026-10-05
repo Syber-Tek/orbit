@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:orbit/models/habit.dart';
+import 'package:orbit/utils/app_haptics.dart';
 
 class HabitItemCard extends StatelessWidget {
   final Habit habit;
@@ -27,7 +27,7 @@ class HabitItemCard extends StatelessWidget {
       key: ValueKey(habit.id),
       direction: DismissDirection.endToStart,
       onDismissed: (_) {
-        HapticFeedback.mediumImpact();
+        AppHaptics.mediumImpact();
         onDelete?.call();
       },
       background: Container(
@@ -162,7 +162,7 @@ class HabitItemCard extends StatelessWidget {
           // Check-in Circle Button
           GestureDetector(
             onTap: () {
-              HapticFeedback.lightImpact();
+              AppHaptics.lightImpact();
               onToggle();
             },
             child: AnimatedContainer(

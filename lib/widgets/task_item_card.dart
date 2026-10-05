@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/models/task.dart';
+import 'package:orbit/utils/app_haptics.dart';
 
 class TaskItemCard extends StatelessWidget {
   final TaskItem task;
@@ -36,7 +36,7 @@ class TaskItemCard extends StatelessWidget {
       key: ValueKey(task.id),
       direction: DismissDirection.endToStart,
       onDismissed: (_) {
-        HapticFeedback.mediumImpact();
+        AppHaptics.mediumImpact();
         onDelete();
       },
       background: Container(
@@ -80,7 +80,7 @@ class TaskItemCard extends StatelessWidget {
               // Checkbox Button
               GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  AppHaptics.lightImpact();
                   onToggle();
                 },
                 child: AnimatedContainer(
@@ -300,7 +300,7 @@ class TaskItemCard extends StatelessWidget {
   }
 
   void _showTaskOptions(BuildContext context) {
-    HapticFeedback.selectionClick();
+    AppHaptics.selectionClick();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
