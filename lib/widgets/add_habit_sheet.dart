@@ -183,7 +183,6 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
               child: Row(
                 children: _categories.map((cat) {
                   final isSelected = _selectedCategory == cat['name'];
-                  final color = Color(cat['color'] as int);
 
                   return GestureDetector(
                     onTap: () {
@@ -198,11 +197,15 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? color.withValues(alpha: 0.16)
+                            ? (isDark
+                                ? Colors.white.withValues(alpha: 0.12)
+                                : Colors.black.withValues(alpha: 0.06))
                             : (isDark ? const Color(0xFF222329) : const Color(0xFFF1F1ED)),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: isSelected ? color : Colors.transparent,
+                          color: isSelected
+                              ? (isDark ? Colors.white : const Color(0xFF18181B))
+                              : Colors.transparent,
                           width: 1.4,
                         ),
                       ),
@@ -211,7 +214,9 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
                           Icon(
                             cat['icon'] as IconData,
                             size: 16,
-                            color: isSelected ? color : (isDark ? Colors.grey : Colors.black54),
+                            color: isSelected
+                                ? (isDark ? Colors.white : const Color(0xFF18181B))
+                                : (isDark ? Colors.grey : Colors.black54),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -220,7 +225,7 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
                               fontSize: 13,
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                               color: isSelected
-                                  ? (isDark ? Colors.white : color)
+                                  ? (isDark ? Colors.white : const Color(0xFF18181B))
                                   : (isDark ? Colors.grey : Colors.black87),
                             ),
                           ),
@@ -374,7 +379,10 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+        borderSide: BorderSide(
+          color: isDark ? Colors.white : const Color(0xFF18181B),
+          width: 1.5,
+        ),
       ),
     );
   }
