@@ -5,8 +5,16 @@ import 'package:orbit/models/habit.dart';
 class HabitItemCard extends StatelessWidget {
   final Habit habit;
   final VoidCallback onToggle;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
-  const HabitItemCard({super.key, required this.habit, required this.onToggle});
+  const HabitItemCard({
+    super.key,
+    required this.habit,
+    required this.onToggle,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,26 +23,53 @@ class HabitItemCard extends StatelessWidget {
     final isDone = habit.isCompletedToday;
     final accentColor = Color(habit.colorValue);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: isDone
-            ? (isDark
-                  ? const Color(0xFF16171B).withValues(alpha: 0.7)
-                  : const Color(0xFFF6F6F2))
-            : (isDark ? const Color(0xFF18191E) : Colors.white),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDone
-              ? (isDark ? const Color(0xFF222329) : const Color(0xFFE8E8E2))
-              : (isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF)),
-          width: 1.2,
+    return Dismissible(
+      key: ValueKey(habit.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) {
+        HapticFeedback.mediumImpact();
+        onDelete?.call();
+      },
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.only(right: 20),
+        alignment: Alignment.centerRight,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEF4444).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(
+          Icons.delete_outline_rounded,
+          color: Colors.white,
+          size: 24,
         ),
       ),
-      child: Row(
-        children: [
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: isDone
+              ? (isDark
+                    ? const Color(0xFF16171B).withValues(alpha: 0.7)
+                    : const Color(0xFFF6F6F2))
+              : (isDark ? const Color(0xFF18191E) : Colors.white),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDone
+                ? (isDark ? const Color(0xFF222329) : const Color(0xFFE8E8E2))
+                : (isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF)),
+            width: 1.2,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onEdit,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
           // Category Icon
           Container(
             width: 46,
@@ -163,7 +198,11 @@ class HabitItemCard extends StatelessWidget {
               ),
             ),
           ),
-        ],
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

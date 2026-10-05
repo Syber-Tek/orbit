@@ -5,21 +5,25 @@ import 'package:orbit/models/habit.dart';
 import 'package:orbit/services/habit_provider.dart';
 
 class AddHabitSheet extends ConsumerStatefulWidget {
-  const AddHabitSheet({super.key});
+  final Habit? initialHabit;
+
+  const AddHabitSheet({super.key, this.initialHabit});
 
   @override
   ConsumerState<AddHabitSheet> createState() => _AddHabitSheetState();
 }
 
 class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
-  final _titleController = TextEditingController();
-  final _targetController = TextEditingController(text: '1');
-  final _unitController = TextEditingController(text: 'times');
+  late final TextEditingController _titleController;
+  late final TextEditingController _targetController;
+  late final TextEditingController _unitController;
 
-  String _selectedCategory = 'Health';
-  HabitTimeOfDay _selectedTimeOfDay = HabitTimeOfDay.anytime;
-  int _selectedColor = 0xFF10B981;
-  int _selectedIconCode = Icons.check_circle_outline_rounded.codePoint;
+  late String _selectedCategory;
+  late HabitTimeOfDay _selectedTimeOfDay;
+  late int _selectedColor;
+  late int _selectedIconCode;
+
+  bool get _isEditing => widget.initialHabit != null;
 
   final List<Map<String, dynamic>> _categories = [
     {'name': 'Health', 'icon': Icons.favorite_rounded, 'color': 0xFF10B981},
@@ -28,6 +32,22 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
     {'name': 'Growth', 'icon': Icons.menu_book_rounded, 'color': 0xFFF59E0B},
     {'name': 'Focus', 'icon': Icons.timer_rounded, 'color': 0xFF3B82F6},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final h = widget.initialHabit;
+    _titleController = TextEditingController(text: h?.title ?? '');
+    _targetController = TextEditingController(
+      text: h != null ? h.targetCount.toString() : '1',
+    );
+    _unitController = TextEditingController(text: h?.unit ?? 'times');
+    _selectedCategory = h?.category ?? 'Health';
+    _selectedTimeOfDay = h?.timeOfDay ?? HabitTimeOfDay.anytime;
+    _selectedColor = h?.colorValue ?? 0xFF10B981;
+    _selectedIconCode =
+        h?.iconCodePoint ?? Icons.check_circle_outline_rounded.codePoint;
+  }
 
   @override
   void dispose() {
@@ -44,20 +64,40 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
     final target = int.tryParse(_targetController.text.trim()) ?? 1;
     final unit = _unitController.text.trim().isEmpty ? 'times' : _unitController.text.trim();
 
-    final newHabit = Habit(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      category: _selectedCategory,
-      iconCodePoint: _selectedIconCode,
-      colorValue: _selectedColor,
-      targetCount: target,
-      unit: unit,
-      timeOfDay: _selectedTimeOfDay,
-      createdAt: DateTime.now(),
-    );
+    if (_isEditing) {
+      final updated = widget.initialHabit!.copyWith(
+        title: title,
+        category: _selectedCategory,
+        iconCodePoint: _selectedIconCode,
+        colorValue: _selectedColor,
+        targetCount: target,
+        unit: unit,
+        timeOfDay: _selectedTimeOfDay,
+      );
+      ref.read(habitListProvider.notifier).updateHabit(updated);
+    } else {
+      final newHabit = Habit(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title,
+        category: _selectedCategory,
+        iconCodePoint: _selectedIconCode,
+        colorValue: _selectedColor,
+        targetCount: target,
+        unit: unit,
+        timeOfDay: _selectedTimeOfDay,
+        createdAt: DateTime.now(),
+      );
+      ref.read(habitListProvider.notifier).addHabit(newHabit);
+    }
 
-    ref.read(habitListProvider.notifier).addHabit(newHabit);
     HapticFeedback.mediumImpact();
+    Navigator.pop(context);
+  }
+
+  void _deleteHabit() {
+    if (!_isEditing) return;
+    HapticFeedback.mediumImpact();
+    ref.read(habitListProvider.notifier).deleteHabit(widget.initialHabit!.id);
     Navigator.pop(context);
   }
 
@@ -94,14 +134,29 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'New Habit',
+                  _isEditing ? 'Edit Habit' : 'New Habit',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20),
-                  onPressed: () => Navigator.pop(context),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isEditing)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          size: 22,
+                          color: Color(0xFFEF4444),
+                        ),
+                        tooltip: 'Delete Habit',
+                        onPressed: _deleteHabit,
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -243,9 +298,9 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Create Habit',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                child: Text(
+                  _isEditing ? 'Save Changes' : 'Create Habit',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
             ),

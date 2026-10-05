@@ -11,8 +11,8 @@ class ScreenTimeState {
   const ScreenTimeState({
     required this.apps,
     this.dailyGoalMinutes = 240, // 4 hours
-    this.pickupsToday = 42,
-    this.hourlyUsage = const [15, 28, 42, 35, 14, 0],
+    this.pickupsToday = 0,
+    this.hourlyUsage = const [0, 0, 0, 0, 0, 0],
   });
 
   int get totalMinutesSpent =>
@@ -68,7 +68,7 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           name: 'WhatsApp',
           packageName: 'com.whatsapp',
           category: AppCategory.social,
-          timeSpentMinutes: 185,
+          timeSpentMinutes: 0,
           limitMinutes: 300, // 300 mins default limit
           notifyAt10Min: true,
           notifyAt5Min: true,
@@ -79,8 +79,8 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           name: 'TikTok',
           packageName: 'com.zhiliaoapp.musically',
           category: AppCategory.entertainment,
-          timeSpentMinutes: 45,
-          limitMinutes: 45, // Reached limit -> LOCKED!
+          timeSpentMinutes: 0,
+          limitMinutes: 45,
           notifyAt10Min: true,
           notifyAt5Min: true,
           isStrictLock: true,
@@ -90,8 +90,8 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           name: 'Instagram',
           packageName: 'com.instagram.android',
           category: AppCategory.social,
-          timeSpentMinutes: 52,
-          limitMinutes: 60, // 8 mins left -> triggers 10-min warning!
+          timeSpentMinutes: 0,
+          limitMinutes: 60,
           notifyAt10Min: true,
           notifyAt5Min: true,
           isStrictLock: true,
@@ -101,8 +101,8 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           name: 'Snapchat',
           packageName: 'com.snapchat.android',
           category: AppCategory.social,
-          timeSpentMinutes: 26,
-          limitMinutes: 30, // 4 mins left -> triggers 5-min warning!
+          timeSpentMinutes: 0,
+          limitMinutes: 30,
           notifyAt10Min: true,
           notifyAt5Min: true,
           isStrictLock: true,
@@ -112,7 +112,7 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           name: 'YouTube',
           packageName: 'com.google.android.youtube',
           category: AppCategory.entertainment,
-          timeSpentMinutes: 68,
+          timeSpentMinutes: 0,
           limitMinutes: 120,
           notifyAt10Min: true,
           notifyAt5Min: true,
@@ -122,15 +122,15 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           name: 'LinkedIn',
           packageName: 'com.linkedin.android',
           category: AppCategory.social,
-          timeSpentMinutes: 24,
+          timeSpentMinutes: 0,
           limitMinutes: 45,
           notifyAt10Min: true,
           notifyAt5Min: true,
         ),
       ],
       dailyGoalMinutes: 480, // 8 hours
-      pickupsToday: 56,
-      hourlyUsage: [25, 60, 95, 80, 85, 55],
+      pickupsToday: 0,
+      hourlyUsage: [0, 0, 0, 0, 0, 0],
     );
   }
 

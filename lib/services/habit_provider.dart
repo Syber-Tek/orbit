@@ -6,10 +6,6 @@ class HabitListNotifier extends Notifier<List<Habit>> {
   @override
   List<Habit> build() {
     final now = DateTime.now();
-    final today = _dateKey(now);
-    final yesterday = _dateKey(now.subtract(const Duration(days: 1)));
-    final twoDaysAgo = _dateKey(now.subtract(const Duration(days: 2)));
-    final threeDaysAgo = _dateKey(now.subtract(const Duration(days: 3)));
 
     return [
       Habit(
@@ -19,12 +15,12 @@ class HabitListNotifier extends Notifier<List<Habit>> {
         iconCodePoint: Icons.fitness_center_rounded.codePoint,
         colorValue: 0xFFEC4899, // Pink / Coral
         targetCount: 45,
-        currentCount: 45,
+        currentCount: 0,
         unit: 'mins',
-        streak: 12,
+        streak: 0,
         timeOfDay: HabitTimeOfDay.morning,
-        completedDates: [threeDaysAgo, twoDaysAgo, yesterday, today],
-        createdAt: now.subtract(const Duration(days: 12)),
+        completedDates: const [],
+        createdAt: now,
       ),
       Habit(
         id: '2',
@@ -33,12 +29,12 @@ class HabitListNotifier extends Notifier<List<Habit>> {
         iconCodePoint: Icons.water_drop_rounded.codePoint,
         colorValue: 0xFF3B82F6, // Blue
         targetCount: 2500,
-        currentCount: 1500,
+        currentCount: 0,
         unit: 'ml',
-        streak: 9,
+        streak: 0,
         timeOfDay: HabitTimeOfDay.anytime,
-        completedDates: [threeDaysAgo, twoDaysAgo, yesterday],
-        createdAt: now.subtract(const Duration(days: 9)),
+        completedDates: const [],
+        createdAt: now,
       ),
     ];
   }
@@ -77,6 +73,10 @@ class HabitListNotifier extends Notifier<List<Habit>> {
 
   void addHabit(Habit habit) {
     state = [habit, ...state];
+  }
+
+  void updateHabit(Habit updated) {
+    state = state.map((h) => h.id == updated.id ? updated : h).toList();
   }
 
   void deleteHabit(String id) {

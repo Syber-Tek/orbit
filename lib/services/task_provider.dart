@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbit/models/task.dart';
 
@@ -7,85 +6,7 @@ enum TaskFilter { all, todo, done, highPriority }
 class TaskListNotifier extends Notifier<List<TaskItem>> {
   @override
   List<TaskItem> build() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final twoDaysLater = today.add(const Duration(days: 2));
-
-    return [
-      TaskItem(
-        id: '1',
-        title: 'Team Product Stand-up',
-        description: 'Discuss weekly sprint goals and feature releases',
-        scheduledDate: today,
-        scheduledTime: const TimeOfDay(hour: 9, minute: 30),
-        hasAlarm: true,
-        priority: TaskPriority.high,
-        category: TaskCategory.work,
-        isCompleted: true,
-        createdAt: now.subtract(const Duration(hours: 3)),
-      ),
-      TaskItem(
-        id: '2',
-        title: 'Prepare Orbit Presentation',
-        description: 'Finalize mobile deck and motion prototypes',
-        scheduledDate: today,
-        scheduledTime: const TimeOfDay(hour: 11, minute: 30),
-        hasAlarm: true,
-        priority: TaskPriority.high,
-        category: TaskCategory.work,
-        isCompleted: false,
-        createdAt: now.subtract(const Duration(hours: 2)),
-      ),
-      TaskItem(
-        id: '3',
-        title: 'Afternoon Gym & Cardio Session',
-        description: 'Leg day routine & 20 mins rowing machine',
-        scheduledDate: today,
-        scheduledTime: const TimeOfDay(hour: 16, minute: 0),
-        hasAlarm: true,
-        priority: TaskPriority.medium,
-        category: TaskCategory.health,
-        isCompleted: false,
-        createdAt: now.subtract(const Duration(hours: 1)),
-      ),
-      TaskItem(
-        id: '4',
-        title: 'Review Financial Ledger Report',
-        description: 'Cross-check monthly subscriptions and grocery expenses',
-        scheduledDate: today,
-        scheduledTime: const TimeOfDay(hour: 19, minute: 0),
-        hasAlarm: false,
-        priority: TaskPriority.low,
-        category: TaskCategory.personal,
-        isCompleted: false,
-        createdAt: now,
-      ),
-      TaskItem(
-        id: '5',
-        title: 'Flutter Architecture Deep Dive',
-        description: 'Read Riverpod 3.0 documentation and state patterns',
-        scheduledDate: tomorrow,
-        scheduledTime: const TimeOfDay(hour: 10, minute: 0),
-        hasAlarm: true,
-        priority: TaskPriority.medium,
-        category: TaskCategory.study,
-        isCompleted: false,
-        createdAt: now,
-      ),
-      TaskItem(
-        id: '6',
-        title: 'Doctor Appointment',
-        description: 'Routine check-up at Central Clinic',
-        scheduledDate: twoDaysLater,
-        scheduledTime: const TimeOfDay(hour: 14, minute: 30),
-        hasAlarm: true,
-        priority: TaskPriority.high,
-        category: TaskCategory.health,
-        isCompleted: false,
-        createdAt: now,
-      ),
-    ];
+    return const [];
   }
 
   void toggleTask(String id) {

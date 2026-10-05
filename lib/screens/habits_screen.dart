@@ -5,6 +5,7 @@ import 'package:orbit/models/habit.dart';
 import 'package:orbit/screens/all_notes_screen.dart';
 import 'package:orbit/services/habit_provider.dart';
 import 'package:orbit/services/note_provider.dart';
+import 'package:orbit/widgets/add_habit_sheet.dart';
 import 'package:orbit/widgets/daily_pulse_row.dart';
 import 'package:orbit/widgets/habit_item_card.dart';
 import 'package:orbit/widgets/note_card.dart';
@@ -187,6 +188,20 @@ class HabitsScreen extends ConsumerWidget {
                           ref
                               .read(habitListProvider.notifier)
                               .toggleHabit(habit.id);
+                        },
+                        onEdit: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) =>
+                                AddHabitSheet(initialHabit: habit),
+                          );
+                        },
+                        onDelete: () {
+                          ref
+                              .read(habitListProvider.notifier)
+                              .deleteHabit(habit.id);
                         },
                       );
                     }),
