@@ -187,7 +187,7 @@ class LedgerScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'TRANSACTIONS',
+                      'Transactions',
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,

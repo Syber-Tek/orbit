@@ -86,7 +86,7 @@ class FocusTimerCard extends ConsumerWidget {
 
                   // Duration Display & Stepper
                   Text(
-                    'DURATION (MINUTES)',
+                    'Duration (minutes)',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -292,7 +292,7 @@ class FocusTimerCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'POMODORO FOCUS',
+                        'Pomodoro  Focus',
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,

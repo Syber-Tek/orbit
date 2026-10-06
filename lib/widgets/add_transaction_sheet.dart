@@ -163,7 +163,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'AMOUNT',
+                    'Amount',
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -275,7 +275,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             // Category Selection (only for expenses)
             if (_type == TransactionType.expense) ...[
               Text(
-                'CATEGORY',
+                'Category',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,

@@ -267,7 +267,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
 
             // Category Chips
             Text(
-              'CATEGORY',
+              'Category',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -323,7 +323,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'DAILY APP LIMIT',
+                  'Daily App Limit',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -532,7 +532,7 @@ class _AddCustomAppSheetState extends ConsumerState<AddCustomAppSheet> {
 
             // Warning Alerts
             Text(
-              'CLOSING NOTIFICATIONS',
+              'Closing Notifications',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,

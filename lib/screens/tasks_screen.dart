@@ -83,7 +83,7 @@ class TasksScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'DAILY GOAL',
+                          'Daily Goal',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,

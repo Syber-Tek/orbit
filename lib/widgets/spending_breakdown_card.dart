@@ -40,7 +40,7 @@ class SpendingBreakdownCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'SPENDING BY CATEGORY',
+                'Spending by Category',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,

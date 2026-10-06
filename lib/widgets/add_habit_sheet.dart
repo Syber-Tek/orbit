@@ -163,7 +163,7 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
             const SizedBox(height: 18),
 
             // Habit Title
-            Text('HABIT TITLE', style: _labelStyle(isDark)),
+            Text('Habit title', style: _labelStyle(isDark)),
             const SizedBox(height: 8),
             TextField(
               controller: _titleController,

@@ -48,7 +48,7 @@ class BudgetCeilingCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'MONTHLY BUDGET CEILING',
+                'Monthly Budget Ceiling',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
