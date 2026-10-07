@@ -109,8 +109,8 @@ class HabitsScreen extends ConsumerWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: isDark
-                              ? const Color(0xFF34D399)
-                              : const Color(0xFF059669),
+                              ? Colors.white
+                              : const Color(0xFF18181B),
                         ),
                       ),
                     ],

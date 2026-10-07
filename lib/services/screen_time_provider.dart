@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbit/models/screen_time.dart';
+import 'package:orbit/services/focus_foreground_service.dart';
 import 'package:orbit/services/notification_service.dart';
 import 'package:orbit/services/persistence_service.dart';
 
@@ -55,7 +56,9 @@ class ScreenTimeState {
       apps.where((app) => app.isLocked).toList();
 
   List<AppUsageItem> get warningApps => apps
-      .where((app) => !app.isLocked && (app.is5MinWarning || app.is10MinWarning))
+      .where(
+        (app) => !app.isLocked && (app.is5MinWarning || app.is10MinWarning),
+      )
       .toList();
 
   ScreenTimeState copyWith({
@@ -82,7 +85,9 @@ class ScreenTimeState {
 }
 
 class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
-  static const MethodChannel _platform = MethodChannel('com.example.orbit/usage_stats');
+  static const MethodChannel _platform = MethodChannel(
+    'com.example.orbit/usage_stats',
+  );
   Timer? _pollTimer;
 
   /// Tracks which threshold warnings have already fired today so a single
@@ -201,24 +206,26 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
           await _platform.invokeMethod<bool>('checkUsagePermission') ?? false;
       final hasA11y =
           await _platform.invokeMethod<bool>('checkAccessibilityEnabled') ??
-              false;
+          false;
       final isRunning =
           await _platform.invokeMethod<bool>('isMonitorServiceRunning') ??
-              false;
+          false;
 
       Map<String, int> nativeUsage = {};
       List<int> hourly = const [0, 0, 0, 0, 0, 0];
       int pickups = 0;
       if (hasUsage) {
-        final rawMap = await _platform
-            .invokeMethod<Map<Object?, Object?>>('getTodayUsageStats');
+        final rawMap = await _platform.invokeMethod<Map<Object?, Object?>>(
+          'getTodayUsageStats',
+        );
         if (rawMap != null) {
           nativeUsage = rawMap.map(
             (k, v) => MapEntry(k.toString(), (v as num).toInt()),
           );
         }
-        final stats = await _platform
-            .invokeMethod<Map<Object?, Object?>>('getScreenTimeStats');
+        final stats = await _platform.invokeMethod<Map<Object?, Object?>>(
+          'getScreenTimeStats',
+        );
         if (stats != null) {
           final rawHourly = stats['hourlyUsage'];
           if (rawHourly is List && rawHourly.length == 6) {
@@ -234,8 +241,9 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
       var baseline = state.apps;
       if (state.day != today) {
         _firedWarnings.clear();
-        baseline =
-            baseline.map((app) => app.copyWith(timeSpentMinutes: 0)).toList();
+        baseline = baseline
+            .map((app) => app.copyWith(timeSpentMinutes: 0))
+            .toList();
         hourly = const [0, 0, 0, 0, 0, 0];
         pickups = 0;
       }
@@ -353,9 +361,7 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
       apps: state.apps.map((app) {
         if (app.id != id) return app;
         if (app.limitMinutes == null) return app;
-        return app.copyWith(
-          limitMinutes: app.limitMinutes! + extensionMinutes,
-        );
+        return app.copyWith(limitMinutes: app.limitMinutes! + extensionMinutes);
       }).toList(),
     );
     _firedWarnings.removeWhere((key) => key.startsWith('$id:'));
@@ -369,9 +375,7 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
     state = state.copyWith(
       apps: state.apps.map((app) {
         if (app.id != id) return app;
-        return app.copyWith(
-          timeSpentMinutes: app.timeSpentMinutes + minutes,
-        );
+        return app.copyWith(timeSpentMinutes: app.timeSpentMinutes + minutes);
       }).toList(),
     );
 
@@ -385,7 +389,10 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
   /// Posts a real OS notification when usage moves past the 10, 5 or lock
   /// threshold, so the warning reaches the user even when the app is
   /// backgrounded.
-  Future<void> _notifyOnCrossing(AppUsageItem before, AppUsageItem after) async {
+  Future<void> _notifyOnCrossing(
+    AppUsageItem before,
+    AppUsageItem after,
+  ) async {
     if (!after.hasLimit) return;
 
     final wasRemaining = before.remainingMinutes;
@@ -437,8 +444,8 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
 
 final screenTimeProvider =
     NotifierProvider<ScreenTimeNotifier, ScreenTimeState>(
-  ScreenTimeNotifier.new,
-);
+      ScreenTimeNotifier.new,
+    );
 
 // Focus Session Notifier
 class FocusSessionNotifier extends Notifier<FocusSession> {
@@ -450,6 +457,9 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
       _timer?.cancel();
     });
 
+    FocusForegroundService.instance.listen(_onServiceEvent);
+    unawaited(_restoreFromService());
+
     return const FocusSession(
       id: 'focus_1',
       title: 'Deep Work',
@@ -457,8 +467,66 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
     );
   }
 
+  /// Mirrors the native foreground service state into the UI if the timer was
+  /// (or is still) running while the app was away.
+  Future<void> _restoreFromService() async {
+    final native = await FocusForegroundService.instance.state();
+    if (native == null) return;
+
+    final totalSeconds = native['totalSeconds'] as int? ?? 0;
+    final remainingSeconds = native['remainingSeconds'] as int? ?? 0;
+    final running = native['running'] == true;
+    if (totalSeconds <= 0 || remainingSeconds <= 0) return;
+
+    final minutes = (totalSeconds / 60).round().clamp(1, 180);
+    state = FocusSession(
+      id: state.id,
+      title: native['title']?.toString() ?? state.title,
+      targetMinutes: minutes,
+      elapsedSeconds: totalSeconds - remainingSeconds,
+      isRunning: running,
+      isCompleted: false,
+    );
+    if (running) {
+      _beginTicking();
+    }
+  }
+
+  void _onServiceEvent(
+    String event,
+    int totalSeconds,
+    int remainingSeconds,
+    bool running,
+  ) {
+    final total = totalSeconds > 0 ? totalSeconds : state.targetMinutes * 60;
+    final elapsed = (total - remainingSeconds).clamp(0, total);
+    switch (event) {
+      case 'paused':
+        _timer?.cancel();
+        state = state.copyWith(elapsedSeconds: elapsed, isRunning: false);
+      case 'resumed':
+        state = state.copyWith(elapsedSeconds: elapsed, isRunning: true);
+        _beginTicking();
+      case 'stopped':
+        _timer?.cancel();
+        state = state.copyWith(
+          elapsedSeconds: 0,
+          isRunning: false,
+          isCompleted: false,
+        );
+      case 'completed':
+        _timer?.cancel();
+        state = state.copyWith(
+          elapsedSeconds: total,
+          isRunning: false,
+          isCompleted: true,
+        );
+    }
+  }
+
   void setPreset({required String title, required int minutes}) {
     _timer?.cancel();
+    unawaited(FocusForegroundService.instance.stop());
     state = FocusSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
@@ -481,6 +549,7 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
 
   void setCustomMinutes(int minutes, {String? title}) {
     _timer?.cancel();
+    unawaited(FocusForegroundService.instance.stop());
     state = FocusSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title ?? state.title,
@@ -494,8 +563,23 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
   void start() {
     if (state.isRunning) return;
     state = state.copyWith(isRunning: true);
+    unawaited(
+      FocusForegroundService.instance.start(
+        title: state.title,
+        totalSeconds: state.targetMinutes * 60,
+        remainingSeconds: state.remainingSeconds,
+      ),
+    );
+    _beginTicking();
+  }
+
+  void _beginTicking() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!state.isRunning) {
+        timer.cancel();
+        return;
+      }
       if (state.elapsedSeconds + 1 >= state.targetMinutes * 60) {
         timer.cancel();
         state = state.copyWith(
@@ -512,6 +596,7 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
   void pause() {
     _timer?.cancel();
     state = state.copyWith(isRunning: false);
+    unawaited(FocusForegroundService.instance.pause());
   }
 
   void reset() {
@@ -521,10 +606,11 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
       isRunning: false,
       isCompleted: false,
     );
+    unawaited(FocusForegroundService.instance.stop());
   }
 }
 
 final focusSessionProvider =
     NotifierProvider<FocusSessionNotifier, FocusSession>(
-  FocusSessionNotifier.new,
-);
+      FocusSessionNotifier.new,
+    );

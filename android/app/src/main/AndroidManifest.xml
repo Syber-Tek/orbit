@@ -65,6 +65,16 @@
                 android:value="Screen Time App Monitor" />
         </service>
 
+        <!-- Focus Timer Foreground Service (countdown survives app close) -->
+        <service
+            android:name=".FocusTimerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Focus Timer" />
+        </service>
+
         <!-- Screen Time Active App Blocker Accessibility Service -->
         <service
             android:name=".ScreenTimeAccessibilityService"

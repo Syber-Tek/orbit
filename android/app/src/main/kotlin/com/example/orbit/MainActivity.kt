@@ -10,6 +10,7 @@ import android.provider.Settings
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import kotlin.concurrent.thread
 
@@ -17,6 +18,8 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         const val CHANNEL = "com.example.orbit/usage_stats"
+        const val FOCUS_CHANNEL = "com.example.orbit/focus"
+        const val FOCUS_EVENTS_CHANNEL = "com.example.orbit/focus_events"
     }
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
@@ -106,6 +109,78 @@ class MainActivity : FlutterActivity() {
                 }
                 else -> result.notImplemented()
             }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FOCUS_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "startFocus" -> {
+                    val title = call.argument<String>("title") ?: "Focus"
+                    val totalSeconds = call.argument<Int>("totalSeconds") ?: 25 * 60
+                    val remainingSeconds = call.argument<Int>("remainingSeconds") ?: totalSeconds
+                    try {
+                        val intent = Intent(this, FocusTimerService::class.java).apply {
+                            action = FocusTimerService.ACTION_START
+                            putExtra("title", title)
+                            putExtra("totalSeconds", totalSeconds)
+                            putExtra("remainingSeconds", remainingSeconds)
+                        }
+                        ContextCompat.startForegroundService(this, intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
+                }
+                "pauseFocus" -> {
+                    startFocusServiceAction(FocusTimerService.ACTION_PAUSE)
+                    result.success(true)
+                }
+                "resumeFocus" -> {
+                    startFocusServiceAction(FocusTimerService.ACTION_RESUME)
+                    result.success(true)
+                }
+                "stopFocus" -> {
+                    startFocusServiceAction(FocusTimerService.ACTION_STOP)
+                    result.success(true)
+                }
+                "getFocusState" -> {
+                    val prefs = getSharedPreferences(FocusTimerService.PREFS, Context.MODE_PRIVATE)
+                    if (!prefs.contains("title") || prefs.getInt("remainingSeconds", 0) <= 0) {
+                        result.success(null)
+                    } else {
+                        result.success(
+                            mapOf(
+                                "title" to (prefs.getString("title", "Focus") ?: "Focus"),
+                                "totalSeconds" to prefs.getInt("totalSeconds", 25 * 60),
+                                "remainingSeconds" to prefs.getInt("remainingSeconds", 0),
+                                "running" to prefs.getBoolean("running", false)
+                            )
+                        )
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Focus timer service -> Flutter events (Pause/Resume/Stop/Complete from
+        // the lock-screen notification while the app may be open or closed).
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, FOCUS_EVENTS_CHANNEL)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    FocusTimerService.eventSink = events
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    FocusTimerService.eventSink = null
+                }
+            })
+    }
+
+    private fun startFocusServiceAction(action: String) {
+        try {
+            val intent = Intent(this, FocusTimerService::class.java).setAction(action)
+            ContextCompat.startForegroundService(this, intent)
+        } catch (e: Exception) {
+            // Ignore; the service may already have been stopped.
         }
     }
 
