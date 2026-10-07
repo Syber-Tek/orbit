@@ -56,6 +56,18 @@ class MainActivity : FlutterActivity() {
                         }
                     }
                 }
+                "getScreenTimeStats" -> {
+                    thread {
+                        val stats = try {
+                            UsageStatsHelper.getScreenTimeStats(applicationContext)
+                        } catch (e: Exception) {
+                            emptyMap()
+                        }
+                        runOnUiThread {
+                            result.success(stats)
+                        }
+                    }
+                }
                 "startMonitorService" -> {
                     try {
                         val intent = Intent(this, AppMonitorService::class.java)

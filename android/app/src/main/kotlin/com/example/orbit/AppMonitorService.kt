@@ -22,7 +22,10 @@ data class NativeAppLimit(
     val packageName: String,
     val appName: String,
     val limitMinutes: Int,
-    val isEnabled: Boolean
+    val notifyAt10Min: Boolean = true,
+    val notifyAt5Min: Boolean = true,
+    val isStrictLock: Boolean = true,
+    val isEnabled: Boolean = true
 )
 
 class AppMonitorService : Service() {
@@ -39,8 +42,7 @@ class AppMonitorService : Service() {
     private var pollHandler: Handler? = null
 
     private var lastCheckDay = -1
-    private val warnedPackages = mutableSetOf<String>()
-    private val limitNotifiedPackages = mutableSetOf<String>()
+    private val warnedThresholds = mutableSetOf<String>()
     private var lastKickAt = 0L
 
     private val pollRunnable = object : Runnable {
@@ -167,6 +169,11 @@ class AppMonitorService : Service() {
                         packageName = obj.optString("packageName"),
                         appName = obj.optString("appName"),
                         limitMinutes = obj.optInt("limitMinutes", 0),
+                        notifyAt10Min = obj.optBoolean("notifyAt10Min", true),
+                        notifyAt5Min = obj.optBoolean("notifyAt5Min", true),
+                        // Defaults to strict to preserve behaviour for limits
+                        // written before the flag existed.
+                        isStrictLock = obj.optBoolean("isStrictLock", true),
                         isEnabled = obj.optBoolean("isEnabled", true)
                     )
                 )
@@ -217,8 +224,7 @@ class AppMonitorService : Service() {
         val today = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
         if (today != lastCheckDay) {
             lastCheckDay = today
-            warnedPackages.clear()
-            limitNotifiedPackages.clear()
+            warnedThresholds.clear()
         }
 
         val limits = loadLimits().filter { it.isEnabled && it.limitMinutes > 0 }
@@ -230,33 +236,40 @@ class AppMonitorService : Service() {
 
         for (limit in limits) {
             val used = usage[limit.packageName] ?: 0
-            val warningThreshold = maxOf(limit.limitMinutes - 10, limit.limitMinutes / 2)
+            val remaining = (limit.limitMinutes - used).coerceAtLeast(0)
 
-            // Warning alert (once per day)
-            if (used >= warningThreshold && used < limit.limitMinutes) {
-                if (warnedPackages.add(limit.packageName)) {
-                    postAlertNotification(
-                        id = stableId(limit.packageName),
-                        title = "${limit.appName} Limit Warning",
-                        body = "You have ${limit.limitMinutes - used} minutes left on ${limit.appName} today."
-                    )
-                }
-            }
-
-            // Exceeded alert
             if (used >= limit.limitMinutes) {
-                if (limitNotifiedPackages.add(limit.packageName)) {
+                if (warnedThresholds.add("${limit.packageName}:lock")) {
                     postAlertNotification(
                         id = stableId(limit.packageName) + 1,
-                        title = "${limit.appName} Daily Limit Reached!",
-                        body = "Your daily screen time limit for ${limit.appName} has expired.",
+                        title = "${limit.appName} Daily Limit Reached",
+                        body = "Your daily limit for ${limit.appName} is used up. It is locked for today.",
                         fullScreen = true
                     )
                 }
-
-                if (currentForeground == limit.packageName && (nowMs - lastKickAt >= KICK_COOLDOWN_MS)) {
+                // Only force-quit the app when the user asked for a strict lock.
+                if (limit.isStrictLock &&
+                    currentForeground == limit.packageName &&
+                    (nowMs - lastKickAt >= KICK_COOLDOWN_MS)
+                ) {
                     lastKickAt = nowMs
                     sendToHome()
+                }
+            } else if (remaining <= 5 && limit.notifyAt5Min) {
+                if (warnedThresholds.add("${limit.packageName}:5")) {
+                    postAlertNotification(
+                        id = stableId(limit.packageName),
+                        title = "${limit.appName} — 5 minutes left",
+                        body = "You have $remaining minute${if (remaining == 1) "" else "s"} left on ${limit.appName} today."
+                    )
+                }
+            } else if (remaining <= 10 && limit.notifyAt10Min) {
+                if (warnedThresholds.add("${limit.packageName}:10")) {
+                    postAlertNotification(
+                        id = stableId(limit.packageName),
+                        title = "${limit.appName} — 10 minutes left",
+                        body = "You have $remaining minute${if (remaining == 1) "" else "s"} left on ${limit.appName} today."
+                    )
                 }
             }
         }

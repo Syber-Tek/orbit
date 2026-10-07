@@ -14,6 +14,23 @@ class ScreenTimeChart extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final labels = ['6 AM', '9 AM', '12 PM', '3 PM', '6 PM', '9 PM'];
+    final hasUsage = hourlyUsage.any((usage) => usage > 0);
+
+    // The tallest populated bucket is the peak. The label mirrors the chart's
+    // original "Peak: 12 PM (45m)" format.
+    var peakLabel = 'No activity yet';
+    if (hasUsage) {
+      var peakIndex = 0;
+      var peakValue = 0;
+      for (var i = 0; i < hourlyUsage.length; i++) {
+        if (hourlyUsage[i] > peakValue) {
+          peakValue = hourlyUsage[i];
+          peakIndex = i;
+        }
+      }
+      peakLabel = 'Peak: ${labels[peakIndex]} (${peakValue}m)';
+    }
+
     final maxUsage = hourlyUsage.isEmpty
         ? 60
         : hourlyUsage.reduce((a, b) => a > b ? a : b).clamp(30, 120);
@@ -44,7 +61,7 @@ class ScreenTimeChart extends StatelessWidget {
                 ),
               ),
               Text(
-                'Peak: 12 PM (45m)',
+                peakLabel,
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,

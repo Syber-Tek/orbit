@@ -146,8 +146,8 @@ class StreakHeroCard extends ConsumerWidget {
                 '$completedCount of ${habits.length} habits • ${(completionRate * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF18181B),
                 ),
               ),
             ],

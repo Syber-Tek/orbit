@@ -8,16 +8,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:orbit/models/habit.dart';
+import 'package:orbit/models/note.dart';
 import 'package:orbit/models/screen_time.dart';
 import 'package:orbit/models/task.dart';
 import 'package:orbit/services/persistence_service.dart';
 
 /// Android raw resource for the alarm beep. Kept in
-/// `android/app/src/main/res/raw/orbit_alarm.wav`; the pattern is baked into
-/// the file because neither platform loops a notification sound.
+/// `android/app/src/main/res/raw/orbit_alarm.mp3`. A single delivery plays it
+/// once, so the 2-minute ring relies on FLAG_INSISTENT looping it until the
+/// user acts or the configured duration ends.
 const String _kAlarmSoundResource = 'orbit_alarm';
 
 const String _kLimitWarningChannelBase = 'orbit_limit_warnings';
+const String _kNoteReminderChannel = 'orbit_note_reminders';
+const String _kStreakChannel = 'orbit_streak_reminders';
 
 /// Action identifiers used by the alarm notification buttons. They must match
 /// the ids in [_kAlarmCategoryId] and [_androidActions].
@@ -29,11 +34,18 @@ const String kActionDismiss = 'orbit_dismiss';
 const String _kAlarmCategoryId = 'orbit_alarm_v1';
 
 const String _kPayloadTaskPrefix = 'task:';
+const String _kPayloadNotePrefix = 'note:';
+const String _kPayloadStreak = 'streak';
 
-/// Stable notification id namespaces so a task alarm can never collide with
-/// a screen time warning notification.
+/// Stable notification id namespaces so a task alarm can never collide with a
+/// screen time warning, a note reminder or the streak reminder. Every
+/// [_kIdSpace] sized block must stay disjoint, and blocks above
+/// `_kTaskAlarmIdBase + _kIdSpace` are ignored by [syncTaskAlarms] pruning.
 const int _kTaskAlarmIdBase = 1000000;
 const int _kLimitWarningIdBase = 2000000;
+const int _kNoteReminderIdBase = 3000000;
+const int _kStreakReminderId = 3900000;
+const int _kStreakMilestoneIdBase = 4000000;
 const int _kIdSpace = 900000;
 
 /// Deterministic FNV-1a hash. [String.hashCode] is not guaranteed to be
@@ -52,6 +64,10 @@ int _stableId(String seed) {
 /// Riverpod layer can refresh in memory instead of only on disk.
 typedef NotificationActionHandler =
     Future<void> Function(String actionId, String taskId);
+
+/// Invoked when the notification body is tapped (a plain open, no button).
+/// Lets the app jump to the tab the notification belongs to.
+typedef NotificationPayloadHandler = Future<void> Function(String payload);
 
 /// Android freezes a channel's sound and vibration the first time it is
 /// created, so toggling either setting is expressed as a distinct channel id
@@ -101,6 +117,9 @@ class NotificationService {
   /// which is the path taken when the process was killed.
   NotificationActionHandler? actionHandler;
 
+  /// Set by the app layer to handle body taps on a notification.
+  NotificationPayloadHandler? payloadHandler;
+
   bool get isReady => _initialised;
   bool get hasPermission => _permissionGranted;
 
@@ -110,9 +129,17 @@ class NotificationService {
   static int limitWarningNotificationId(String appId) =>
       _kLimitWarningIdBase + _stableId(appId);
 
+  static int noteReminderNotificationId(String noteId) =>
+      _kNoteReminderIdBase + _stableId(noteId);
+
   static String? taskIdFromPayload(String? payload) {
     if (payload == null || !payload.startsWith(_kPayloadTaskPrefix)) return null;
     return payload.substring(_kPayloadTaskPrefix.length);
+  }
+
+  static String? noteIdFromPayload(String? payload) {
+    if (payload == null || !payload.startsWith(_kPayloadNotePrefix)) return null;
+    return payload.substring(_kPayloadNotePrefix.length);
   }
 
   /// Prepares the timezone database and the OS plugin. Safe to call repeatedly.
@@ -176,12 +203,25 @@ class NotificationService {
 
   void _onForegroundResponse(NotificationResponse response) {
     final actionId = response.actionId;
-    // Empty actionId means the body was tapped, which has no meaning yet.
-    if (actionId == null || actionId.isEmpty) return;
+    final payload = response.payload;
 
-    final taskId = taskIdFromPayload(response.payload);
+    // A body tap (no action) routes the notification's payload to the app.
+    if (actionId == null || actionId.isEmpty) {
+      if (payload == null || payload.isEmpty) return;
+      unawaited(_dispatchPayload(payload));
+      return;
+    }
+
+    final taskId = taskIdFromPayload(payload);
     if (taskId == null) return;
     unawaited(_dispatchAction(actionId, taskId));
+  }
+
+  Future<void> _dispatchPayload(String payload) async {
+    final handler = payloadHandler;
+    if (handler != null) {
+      await handler(payload);
+    }
   }
 
   Future<void> _dispatchAction(String actionId, String taskId) async {
@@ -197,7 +237,7 @@ class NotificationService {
   static Future<void> applyActionToDisk(
     String actionId,
     String taskId, {
-    int snoozeMinutes = 10,
+    int? snoozeMinutes,
   }) async {
     final service = NotificationService.instance;
     await service.init();
@@ -216,13 +256,20 @@ class NotificationService {
     }
 
     if (actionId == kActionSnooze) {
-      // Keep the task untouched; just push the alarm out.
-      await service.scheduleSnooze(tasks[index], snoozeMinutes);
+      // Keep the task untouched; just push the alarm out. When no duration is
+      // supplied the configured snooze length is read from preferences, so the
+      // background isolate honours the same setting as the foreground one.
+      await service.scheduleSnooze(tasks[index], minutes: snoozeMinutes);
     }
   }
 
-  /// Prompts for notification permission. Returns true when notifications may
-  /// be posted.
+  /// Prompts for the notification permission only. Returns true when
+  /// notifications may be posted.
+  ///
+  /// Exact-alarm access is deliberately *not* requested here: it is a
+  /// restricted permission that Android shows as a settings screen, so the app
+  /// explains itself first (see the onboarding sheet) and the user taps
+  /// through to [requestExactAlarmPermission].
   Future<bool> requestPermission() async {
     await init();
     if (!_initialised) return false;
@@ -235,8 +282,6 @@ class NotificationService {
       var granted = true;
       if (android != null) {
         granted = await android.requestNotificationsPermission() ?? true;
-        // Exact alarms keep task reminders on the intended minute.
-        await android.requestExactAlarmsPermission();
       }
 
       final ios = _plugin
@@ -246,7 +291,7 @@ class NotificationService {
       if (ios != null) {
         granted =
             await ios.requestPermissions(alert: true, badge: true, sound: true) ??
-            false;
+                false;
       }
 
       _permissionGranted = granted;
@@ -256,6 +301,147 @@ class NotificationService {
     }
     return _permissionGranted;
   }
+
+  /// True when the OS already reports notifications as enabled, without
+  /// prompting. Used by the onboarding sheet to decide what to show.
+  Future<bool> notificationsEnabled() async {
+    await init();
+    if (!_initialised) return false;
+    try {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (android != null) {
+        return await android.areNotificationsEnabled() ?? false;
+      }
+      final ios = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      if (ios != null) {
+        return await ios.checkPermissions() != null;
+      }
+    } catch (error) {
+      debugPrint('Failed to read notification permission state: $error');
+    }
+    return true;
+  }
+
+  /// True when Android will honour `exactAllowWhileIdle` scheduling. Defaults
+  /// to true on platforms without the restriction.
+  Future<bool> canScheduleExact() async {
+    await init();
+    if (!_initialised) return false;
+    try {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (android == null) return true;
+      return await android.canScheduleExactNotifications() ?? false;
+    } catch (error) {
+      debugPrint('Failed to read exact alarm permission: $error');
+      return false;
+    }
+  }
+
+  /// Opens Android's "Alarms & reminders" settings screen so the user can
+  /// grant exact alarms. Never call this unprompted: it navigates away from
+  /// the app.
+  Future<bool> requestExactAlarmPermission() async {
+    await init();
+    if (!_initialised) return false;
+    try {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (android == null) return true;
+      return await android.requestExactAlarmsPermission() ??
+          await canScheduleExact();
+    } catch (error) {
+      debugPrint('Exact alarm permission request failed: $error');
+      return false;
+    }
+  }
+
+  /// Picks the schedule mode the OS will actually accept. Scheduling an exact
+  /// alarm without the restricted permission throws and the alarm is silently
+  /// lost, so we check first and degrade to inexact instead of dropping it.
+  Future<AndroidScheduleMode> _scheduleMode() async {
+    if (!await canScheduleExact()) {
+      return AndroidScheduleMode.inexactAllowWhileIdle;
+    }
+    return AndroidScheduleMode.exactAllowWhileIdle;
+  }
+
+  /// Schedules at [when], retrying inexact when the OS rejects an exact
+  /// alarm. An alarm is never silently dropped.
+  Future<bool> _scheduleAt({
+    required int id,
+    String? title,
+    String? body,
+    required tz.TZDateTime when,
+    required NotificationDetails details,
+    String? payload,
+    DateTimeComponents? match,
+  }) async {
+    final mode = await _scheduleMode();
+    if (await _trySchedule(
+      id: id,
+      title: title,
+      body: body,
+      when: when,
+      details: details,
+      payload: payload,
+      match: match,
+      mode: mode,
+    )) {
+      return true;
+    }
+    if (mode != AndroidScheduleMode.exactAllowWhileIdle) return false;
+    // Exact was rejected anyway (permission revoked between check and call).
+    return _trySchedule(
+      id: id,
+      title: title,
+      body: body,
+      when: when,
+      details: details,
+      payload: payload,
+      match: match,
+      mode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
+  Future<bool> _trySchedule({
+    required int id,
+    String? title,
+    String? body,
+    required tz.TZDateTime when,
+    required NotificationDetails details,
+    required AndroidScheduleMode mode,
+    String? payload,
+    DateTimeComponents? match,
+  }) async {
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: when,
+        notificationDetails: details,
+        androidScheduleMode: mode,
+        payload: payload,
+        matchDateTimeComponents: match,
+      );
+      return true;
+    } catch (error) {
+      debugPrint('Failed to schedule notification $id ($mode): $error');
+      return false;
+    }
+  }
+
 
   /// Reads the persisted preferences directly so this works in any isolate.
   Future<_AlarmPrefs> _readPrefs() async {
@@ -276,7 +462,14 @@ class NotificationService {
   }
 
   /// Arms (or re-arms) the OS alarm for a single task.
-  Future<void> scheduleTaskAlarm(TaskItem task) async {
+  ///
+  /// [promptPermission] is set only for explicit user actions (creating,
+  /// editing or toggling an alarm) so the one-time notification prompt lands
+  /// while the user is looking at it. Bulk syncs stay silent.
+  Future<void> scheduleTaskAlarm(
+    TaskItem task, {
+    bool promptPermission = false,
+  }) async {
     await init();
     if (!_initialised) return;
 
@@ -285,44 +478,42 @@ class NotificationService {
 
     final when = alarmDateTimeFor(task);
     if (when == null) return;
-    if (!_permissionGranted && !await requestPermission()) return;
+    if (!_permissionGranted &&
+        promptPermission &&
+        !await requestPermission()) {
+      return;
+    }
 
     final prefs = await _readPrefs();
-    try {
-      await _plugin.zonedSchedule(
-        id: id,
-        title: task.title,
-        body: _taskBody(task),
-        scheduledDate: when,
-        notificationDetails: _alarmDetails(prefs),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: '$_kPayloadTaskPrefix${task.id}',
-      );
-    } catch (error) {
-      debugPrint('Failed to schedule alarm for task ${task.id}: $error');
-    }
+    await _scheduleAt(
+      id: id,
+      title: task.title,
+      body: _taskBody(task),
+      when: when,
+      details: _alarmDetails(prefs),
+      payload: '$_kPayloadTaskPrefix${task.id}',
+    );
   }
 
-  /// Re-arms the same task id for [minutes] from now.
-  Future<void> scheduleSnooze(TaskItem task, int minutes) async {
+  /// Re-arms the same task id for [minutes] from now. Falls back to the
+  /// configured snooze duration when [minutes] is omitted, which is what the
+  /// background action path does.
+  Future<void> scheduleSnooze(TaskItem task, {int? minutes}) async {
     await init();
     if (!_initialised) return;
 
     final prefs = await _readPrefs();
-    final when = tz.TZDateTime.now(tz.local).add(Duration(minutes: minutes));
-    try {
-      await _plugin.zonedSchedule(
-        id: taskNotificationId(task.id),
-        title: task.title,
-        body: 'Snoozed ${prefs.snoozeMinutes}m • ${task.title}',
-        scheduledDate: when,
-        notificationDetails: _alarmDetails(prefs),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: '$_kPayloadTaskPrefix${task.id}',
-      );
-    } catch (error) {
-      debugPrint('Failed to snooze task ${task.id}: $error');
-    }
+    final snoozeFor = minutes ?? prefs.snoozeMinutes;
+    final when =
+        tz.TZDateTime.now(tz.local).add(Duration(minutes: snoozeFor));
+    await _scheduleAt(
+      id: taskNotificationId(task.id),
+      title: task.title,
+      body: 'Snoozed ${snoozeFor}m • ${task.title}',
+      when: when,
+      details: _alarmDetails(prefs),
+      payload: '$_kPayloadTaskPrefix${task.id}',
+    );
   }
 
   NotificationDetails _alarmDetails(_AlarmPrefs prefs) {
@@ -430,7 +621,10 @@ class NotificationService {
   }) async {
     await init();
     if (!_initialised) return;
-    if (!_permissionGranted && !await requestPermission()) return;
+    // Never prompt from here: this fires from a usage poll, so the sheet the
+    // user would see has nothing to do with notifications.
+    if (!_permissionGranted && !await notificationsEnabled()) return;
+    _permissionGranted = true;
 
     final (title, body) = isLocked
         ? ('$appName limit reached', '$appName is now locked for today.')
@@ -467,6 +661,148 @@ class NotificationService {
     }
   }
 
+  /// Schedules (or reschedules) the single notification [note] asks for.
+  /// Past reminders and notes without a reminder clear the slot instead.
+  Future<void> scheduleNoteReminder(Note note) async {
+    await init();
+    if (!_initialised) return;
+
+    final id = noteReminderNotificationId(note.id);
+    await _safeCancel(id);
+
+    final when = note.reminderAt;
+    if (when == null || !when.isAfter(tz.TZDateTime.now(tz.local).toLocal())) {
+      return;
+    }
+
+    final prefs = await _readPrefs();
+    await _scheduleAt(
+      id: id,
+      title: note.title.isEmpty ? 'Note reminder' : note.title,
+      body: _noteBody(note),
+      when: tz.TZDateTime.from(when, tz.local),
+      details: _reminderDetails(prefs),
+      payload: '$_kPayloadNotePrefix${note.id}',
+    );
+  }
+
+  Future<void> cancelNoteReminder(String noteId) async {
+    await init();
+    if (!_initialised) return;
+    await _safeCancel(noteReminderNotificationId(noteId));
+  }
+
+  /// Reconciles the OS queue with persisted notes. Called on launch and after
+  /// any write so a reminder cannot outlive the note it belongs to.
+  Future<void> syncNoteReminders(List<Note> notes) async {
+    await init();
+    if (!_initialised) return;
+
+    final armed = <int>{};
+    for (final note in notes) {
+      final id = noteReminderNotificationId(note.id);
+      armed.add(id);
+      await scheduleNoteReminder(note);
+    }
+
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final request in pending) {
+        if (request.id < _kNoteReminderIdBase) continue;
+        if (request.id < _kNoteReminderIdBase + _kIdSpace &&
+            !armed.contains(request.id)) {
+          await _safeCancel(request.id);
+        }
+      }
+    } catch (error) {
+      debugPrint('Failed to prune orphaned note reminders: $error');
+    }
+  }
+
+  /// Arms the repeating evening reminder, or removes it when [enabled] is
+  /// false. [matchDateTimeComponents] makes the OS repeat at [hour]:[minute]
+  /// every day, so one scheduled entry covers every future evening.
+  Future<void> syncStreakReminder({
+    required bool enabled,
+    required int hour,
+    required int minute,
+  }) async {
+    await init();
+    if (!_initialised) return;
+
+    if (!enabled) {
+      await _safeCancel(_kStreakReminderId);
+      return;
+    }
+
+    final now = tz.TZDateTime.now(tz.local);
+    var when = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (!when.isAfter(now)) {
+      when = when.add(const Duration(days: 1));
+    }
+
+    final prefs = await _readPrefs();
+    await _scheduleAt(
+      id: _kStreakReminderId,
+      title: 'Keep your streaks alive',
+      body: 'Check in on today\'s habits before midnight.',
+      when: when,
+      details: _reminderDetails(prefs, streak: true),
+      payload: _kPayloadStreak,
+      match: DateTimeComponents.time,
+    );
+  }
+
+  /// One-off celebration when a habit crosses a milestone length.
+  Future<void> showStreakMilestone(Habit habit) async {
+    await init();
+    if (!_initialised) return;
+    if (!_streakMilestones.contains(habit.streak)) return;
+    if (!_permissionGranted && !await notificationsEnabled()) return;
+    _permissionGranted = true;
+
+    final prefs = await _readPrefs();
+    try {
+      await _plugin.show(
+        id: _kStreakMilestoneIdBase + _stableId(habit.id),
+        title: '${habit.streak} day streak!',
+        body: '${habit.title} has run for ${habit.streak} days in a row. Keep it going.',
+        notificationDetails: _reminderDetails(prefs, streak: true),
+        payload: _kPayloadStreak,
+      );
+    } catch (error) {
+      debugPrint('Failed to show streak milestone for ${habit.id}: $error');
+    }
+  }
+
+  NotificationDetails _reminderDetails(_AlarmPrefs prefs, {bool streak = false}) {
+    final channel = streak ? _kStreakChannel : _kNoteReminderChannel;
+    final name = streak ? 'Streak Reminders' : 'Note Reminders';
+    final description = streak
+        ? 'Evening check-in and streak milestones'
+        : 'Reminders attached to saved notes';
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        channel,
+        name,
+        channelDescription: description,
+        importance: Importance.high,
+        priority: Priority.high,
+        color: const Color(0xFF7C5CFF),
+        playSound: prefs.sound,
+        enableVibration: prefs.vibration,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: prefs.sound,
+        interruptionLevel: prefs.bypassDnd
+            ? InterruptionLevel.timeSensitive
+            : InterruptionLevel.active,
+      ),
+    );
+  }
+
   Future<void> cancelAll() async {
     await init();
     if (!_initialised) return;
@@ -488,6 +824,26 @@ class NotificationService {
   String _taskBody(TaskItem task) {
     final priority = task.priority == TaskPriority.high ? ' (High)' : '';
     return '${task.category.label}$priority • ${task.title}';
+  }
+
+  static const Set<int> _streakMilestones = {
+    3,
+    7,
+    14,
+    21,
+    30,
+    50,
+    75,
+    100,
+    150,
+    200,
+    365,
+  };
+
+  String _noteBody(Note note) {
+    final text = note.content.trim();
+    if (text.isEmpty) return 'Your note is waiting.';
+    return text.length > 120 ? '${text.substring(0, 117)}…' : text;
   }
 
   /// Double-tap-then-pause buzz, repeated, so it is distinguishable from a

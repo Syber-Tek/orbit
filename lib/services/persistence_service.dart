@@ -196,6 +196,7 @@ class PersistenceService {
                 ?.map((e) => (e as num).toInt())
                 .toList() ??
             const [0, 0, 0, 0, 0, 0],
+        day: json['day'] as String?,
       );
     } catch (error) {
       debugPrint('Failed to decode stored screen time: $error');
@@ -213,6 +214,7 @@ class PersistenceService {
           'dailyGoalMinutes': state.dailyGoalMinutes,
           'pickupsToday': state.pickupsToday,
           'hourlyUsage': state.hourlyUsage,
+          'day': state.day,
         }),
       );
       await syncLimitsToNative(state.apps);
@@ -232,6 +234,9 @@ class PersistenceService {
                 'packageName': a.packageName,
                 'appName': a.name,
                 'limitMinutes': a.limitMinutes ?? 0,
+                'notifyAt10Min': a.notifyAt10Min,
+                'notifyAt5Min': a.notifyAt5Min,
+                'isStrictLock': a.isStrictLock,
                 'isEnabled': true,
               })
           .toList();

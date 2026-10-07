@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbit/models/habit.dart';
+import 'package:orbit/services/notification_service.dart';
 import 'package:orbit/services/persistence_service.dart';
 
 class HabitListNotifier extends Notifier<List<Habit>> {
@@ -48,6 +51,7 @@ class HabitListNotifier extends Notifier<List<Habit>> {
 
   void toggleHabit(String id) {
     final today = _dateKey(DateTime.now());
+    Habit? completed;
 
     state = state.map((habit) {
       if (habit.id == id) {
@@ -63,16 +67,26 @@ class HabitListNotifier extends Notifier<List<Habit>> {
           );
         } else {
           newDates.add(today);
-          return habit.copyWith(
+          final updated = habit.copyWith(
             completedDates: newDates,
             streak: habit.streak + 1,
             currentCount: habit.targetCount,
           );
+          completed = updated;
+          return updated;
         }
       }
       return habit;
     }).toList();
     PersistenceService.instance.saveHabits(state);
+
+    // Celebrate milestone streaks when a habit crosses one.
+    final done = completed;
+    if (done != null) {
+      unawaited(
+        NotificationService.instance.showStreakMilestone(done),
+      );
+    }
   }
 
   void addHabit(Habit habit) {

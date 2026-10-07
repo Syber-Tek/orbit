@@ -107,8 +107,10 @@ class HabitsScreen extends ConsumerWidget {
                         '$completedCount/${allHabits.length} Done',
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF10B981),
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? const Color(0xFF34D399)
+                              : const Color(0xFF059669),
                         ),
                       ),
                     ],
