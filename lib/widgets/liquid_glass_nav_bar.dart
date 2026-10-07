@@ -185,7 +185,7 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.home,
                         title: 'Habit',
                         subtitle: 'Track a new daily routine or goal',
-                        accentColor: const Color(0xFFFF6B2B),
+                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddHabit?.call();
@@ -197,7 +197,7 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.timeCircle,
                         title: 'Task',
                         subtitle: 'Add a todo, reminder, or alarm',
-                        accentColor: const Color(0xFF3B82F6),
+                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddTodo?.call();
@@ -209,7 +209,7 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.chart,
                         title: 'Screen Time',
                         subtitle: 'Set a daily app boundary or limit',
-                        accentColor: const Color(0xFF8B5CF6),
+                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddAppLimit?.call();
@@ -221,7 +221,7 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.wallet,
                         title: 'Ledger',
                         subtitle: 'Log an expense, budget, or transaction',
-                        accentColor: const Color(0xFF10B981),
+                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddExpense?.call();
@@ -233,7 +233,7 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.document,
                         title: 'Note',
                         subtitle: 'Create a rich-text document',
-                        accentColor: const Color(0xFFF59E0B),
+                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddNote?.call();

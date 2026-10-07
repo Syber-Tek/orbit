@@ -29,7 +29,9 @@ class FocusTimerCard extends ConsumerWidget {
               ),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF16171B) : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -49,17 +51,19 @@ class FocusTimerCard extends ConsumerWidget {
                   Text(
                     'Customize Focus Timer',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 19,
-                          letterSpacing: -0.3,
-                        ),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 19,
+                      letterSpacing: -0.3,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Set custom duration and session focus goal.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -77,7 +81,9 @@ class FocusTimerCard extends ConsumerWidget {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide(
-                          color: isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF),
+                          color: isDark
+                              ? const Color(0xFF272830)
+                              : const Color(0xFFE5E5DF),
                         ),
                       ),
                     ),
@@ -91,18 +97,27 @@ class FocusTimerCard extends ConsumerWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.8,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color: isDark
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(height: 12),
 
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1F26) : const Color(0xFFF6F6F2),
+                      color: isDark
+                          ? const Color(0xFF1E1F26)
+                          : const Color(0xFFF6F6F2),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? const Color(0xFF2E303A) : const Color(0xFFDFDFD8),
+                        color: isDark
+                            ? const Color(0xFF2E303A)
+                            : const Color(0xFFDFDFD8),
                       ),
                     ),
                     child: Row(
@@ -114,16 +129,25 @@ class FocusTimerCard extends ConsumerWidget {
                               onPressed: tempMinutes > 5
                                   ? () {
                                       HapticFeedback.selectionClick();
-                                      setModalState(() => tempMinutes = (tempMinutes - 5).clamp(1, 180));
+                                      setModalState(
+                                        () => tempMinutes = (tempMinutes - 5)
+                                            .clamp(1, 180),
+                                      );
                                     }
                                   : null,
-                              icon: const Icon(Icons.remove_circle_outline_rounded, size: 24),
+                              icon: const Icon(
+                                Icons.remove_circle_outline_rounded,
+                                size: 24,
+                              ),
                             ),
                             IconButton(
                               onPressed: tempMinutes > 1
                                   ? () {
                                       HapticFeedback.selectionClick();
-                                      setModalState(() => tempMinutes = (tempMinutes - 1).clamp(1, 180));
+                                      setModalState(
+                                        () => tempMinutes = (tempMinutes - 1)
+                                            .clamp(1, 180),
+                                      );
                                     }
                                   : null,
                               icon: const Icon(Icons.remove_rounded, size: 20),
@@ -143,7 +167,10 @@ class FocusTimerCard extends ConsumerWidget {
                               onPressed: tempMinutes < 180
                                   ? () {
                                       HapticFeedback.selectionClick();
-                                      setModalState(() => tempMinutes = (tempMinutes + 1).clamp(1, 180));
+                                      setModalState(
+                                        () => tempMinutes = (tempMinutes + 1)
+                                            .clamp(1, 180),
+                                      );
                                     }
                                   : null,
                               icon: const Icon(Icons.add_rounded, size: 20),
@@ -152,10 +179,16 @@ class FocusTimerCard extends ConsumerWidget {
                               onPressed: tempMinutes <= 175
                                   ? () {
                                       HapticFeedback.selectionClick();
-                                      setModalState(() => tempMinutes = (tempMinutes + 5).clamp(1, 180));
+                                      setModalState(
+                                        () => tempMinutes = (tempMinutes + 5)
+                                            .clamp(1, 180),
+                                      );
                                     }
                                   : null,
-                              icon: const Icon(Icons.add_circle_outline_rounded, size: 24),
+                              icon: const Icon(
+                                Icons.add_circle_outline_rounded,
+                                size: 24,
+                              ),
                             ),
                           ],
                         ),
@@ -179,7 +212,9 @@ class FocusTimerCard extends ConsumerWidget {
                             setModalState(() => tempMinutes = mins);
                           }
                         },
-                        selectedColor: isDark ? Colors.white : const Color(0xFF18181B),
+                        selectedColor: isDark
+                            ? Colors.white
+                            : const Color(0xFF18181B),
                         backgroundColor: isDark
                             ? Colors.white.withValues(alpha: 0.05)
                             : Colors.black.withValues(alpha: 0.04),
@@ -187,15 +222,21 @@ class FocusTimerCard extends ConsumerWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: isSelected
-                              ? (isDark ? const Color(0xFF141517) : Colors.white)
-                              : (isDark ? Colors.grey.shade300 : Colors.grey.shade700),
+                              ? (isDark
+                                    ? const Color(0xFF141517)
+                                    : Colors.white)
+                              : (isDark
+                                    ? Colors.grey.shade300
+                                    : Colors.grey.shade700),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
                             color: isSelected
                                 ? Colors.transparent
-                                : (isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF)),
+                                : (isDark
+                                      ? const Color(0xFF272830)
+                                      : const Color(0xFFE5E5DF)),
                           ),
                         ),
                         showCheckmark: false,
@@ -212,15 +253,21 @@ class FocusTimerCard extends ConsumerWidget {
                       onPressed: () {
                         HapticFeedback.mediumImpact();
                         final title = titleController.text.trim();
-                        ref.read(focusSessionProvider.notifier).setCustomMinutes(
+                        ref
+                            .read(focusSessionProvider.notifier)
+                            .setCustomMinutes(
                               tempMinutes,
                               title: title.isNotEmpty ? title : 'Focus Session',
                             );
                         Navigator.pop(ctx);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark ? Colors.white : const Color(0xFF18181B),
-                        foregroundColor: isDark ? const Color(0xFF141517) : Colors.white,
+                        backgroundColor: isDark
+                            ? Colors.white
+                            : const Color(0xFF18181B),
+                        foregroundColor: isDark
+                            ? const Color(0xFF141517)
+                            : Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -228,7 +275,10 @@ class FocusTimerCard extends ConsumerWidget {
                       ),
                       child: const Text(
                         'Set Timer',
-                        style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -258,7 +308,9 @@ class FocusTimerCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: focus.isRunning
-              ? (isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFF18181B).withValues(alpha: 0.5))
+              ? (isDark
+                    ? Colors.white.withValues(alpha: 0.5)
+                    : const Color(0xFF18181B).withValues(alpha: 0.5))
               : (isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF)),
           width: 1.2,
         ),
@@ -276,7 +328,9 @@ class FocusTimerCard extends ConsumerWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Center(
@@ -297,7 +351,9 @@ class FocusTimerCard extends ConsumerWidget {
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.8,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
                         ),
                       ),
                       Row(
@@ -312,11 +368,14 @@ class FocusTimerCard extends ConsumerWidget {
                           if (!focus.isRunning) ...[
                             const SizedBox(width: 4),
                             GestureDetector(
-                              onTap: () => _showCustomDurationSheet(context, ref),
+                              onTap: () =>
+                                  _showCustomDurationSheet(context, ref),
                               child: Icon(
                                 Icons.edit_outlined,
                                 size: 13,
-                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                color: isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
                               ),
                             ),
                           ],
@@ -328,7 +387,10 @@ class FocusTimerCard extends ConsumerWidget {
               ),
               if (focus.isRunning)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.12)
@@ -348,7 +410,9 @@ class FocusTimerCard extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF18181B),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF18181B),
                         ),
                       ),
                     ],
@@ -364,64 +428,95 @@ class FocusTimerCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Timer Digits with Quick Steppers when paused/idle
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: focus.isRunning ? null : () => _showCustomDurationSheet(context, ref),
-                    child: Text(
-                      focus.formattedRemaining,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 32,
-                        letterSpacing: -1,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                  if (!focus.isRunning) ...[
-                    const SizedBox(width: 6),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            focusNotifier.adjustMinutes(5);
-                          },
-                          borderRadius: BorderRadius.circular(6),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text('+5m', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700)),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: focus.isRunning
+                            ? null
+                            : () => _showCustomDurationSheet(context, ref),
+                        child: Text(
+                          focus.formattedRemaining,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 32,
+                            letterSpacing: -1,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        InkWell(
-                          onTap: focus.targetMinutes > 5
-                              ? () {
-                                  HapticFeedback.selectionClick();
-                                  focusNotifier.adjustMinutes(-5);
-                                }
-                              : null,
-                          borderRadius: BorderRadius.circular(6),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                      ),
+                      if (!focus.isRunning) ...[
+                        const SizedBox(width: 6),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                focusNotifier.adjustMinutes(5);
+                              },
                               borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.black.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  '+5m',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
                             ),
-                            child: const Text('-5m', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700)),
-                          ),
+                            const SizedBox(height: 3),
+                            InkWell(
+                              onTap: focus.targetMinutes > 5
+                                  ? () {
+                                      HapticFeedback.selectionClick();
+                                      focusNotifier.adjustMinutes(-5);
+                                    }
+                                  : null,
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.08)
+                                      : Colors.black.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  '-5m',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
-                ],
+                    ],
+                  ),
+                ),
               ),
+              const SizedBox(width: 8),
 
               // Action Buttons
               Row(
@@ -454,7 +549,9 @@ class FocusTimerCard extends ConsumerWidget {
                       }
                     },
                     icon: Icon(
-                      focus.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      focus.isRunning
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
                       size: 20,
                     ),
                     label: Text(
@@ -462,12 +559,19 @@ class FocusTimerCard extends ConsumerWidget {
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark ? Colors.white : const Color(0xFF18181B),
-                      foregroundColor: isDark ? const Color(0xFF141517) : Colors.white,
+                      backgroundColor: isDark
+                          ? Colors.white
+                          : const Color(0xFF18181B),
+                      foregroundColor: isDark
+                          ? const Color(0xFF141517)
+                          : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       elevation: 0,
                     ),
                   ),
@@ -542,16 +646,23 @@ class FocusTimerCard extends ConsumerWidget {
                   onTap: () => _showCustomDurationSheet(context, ref),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: !isPresetSelected
-                          ? (isDark ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.08))
+                          ? (isDark
+                                ? Colors.white.withValues(alpha: 0.14)
+                                : Colors.black.withValues(alpha: 0.08))
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: !isPresetSelected
                             ? (isDark ? Colors.white24 : Colors.black12)
-                            : (isDark ? const Color(0xFF272830) : const Color(0xFFE5E5DF)),
+                            : (isDark
+                                  ? const Color(0xFF272830)
+                                  : const Color(0xFFE5E5DF)),
                       ),
                     ),
                     child: Row(
@@ -560,18 +671,30 @@ class FocusTimerCard extends ConsumerWidget {
                           Icons.tune_rounded,
                           size: 13,
                           color: !isPresetSelected
-                              ? (isDark ? Colors.white : const Color(0xFF18181B))
-                              : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                              ? (isDark
+                                    ? Colors.white
+                                    : const Color(0xFF18181B))
+                              : (isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600),
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          !isPresetSelected ? '${focus.targetMinutes}m (Custom)' : 'Custom...',
+                          !isPresetSelected
+                              ? '${focus.targetMinutes}m (Custom)'
+                              : 'Custom...',
                           style: TextStyle(
                             fontSize: 11.5,
-                            fontWeight: !isPresetSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: !isPresetSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                             color: !isPresetSelected
-                                ? (isDark ? Colors.white : const Color(0xFF18181B))
-                                : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                                ? (isDark
+                                      ? Colors.white
+                                      : const Color(0xFF18181B))
+                                : (isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600),
                           ),
                         ),
                       ],
@@ -605,7 +728,9 @@ class FocusTimerCard extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? Colors.white.withValues(alpha: 0.14) : Colors.black.withValues(alpha: 0.08))
+              ? (isDark
+                    ? Colors.white.withValues(alpha: 0.14)
+                    : Colors.black.withValues(alpha: 0.08))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(

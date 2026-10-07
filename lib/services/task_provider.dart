@@ -34,7 +34,12 @@ class TaskListNotifier extends Notifier<List<TaskItem>> {
     unawaited(_persist());
 
     final task = updated.firstWhere((t) => t.id == id);
-    unawaited(NotificationService.instance.scheduleTaskAlarm(task));
+    unawaited(
+      NotificationService.instance.scheduleTaskAlarm(
+        task,
+        promptPermission: true,
+      ),
+    );
   }
 
   void markTaskDone(String id) {
@@ -51,7 +56,12 @@ class TaskListNotifier extends Notifier<List<TaskItem>> {
   void addTask(TaskItem task) {
     state = [task, ...state];
     unawaited(_persist());
-    unawaited(NotificationService.instance.scheduleTaskAlarm(task));
+    unawaited(
+      NotificationService.instance.scheduleTaskAlarm(
+        task,
+        promptPermission: true,
+      ),
+    );
   }
 
   void updateTask(TaskItem updatedTask) {
@@ -60,7 +70,10 @@ class TaskListNotifier extends Notifier<List<TaskItem>> {
         .toList();
     unawaited(_persist());
     unawaited(
-      NotificationService.instance.scheduleTaskAlarm(updatedTask),
+      NotificationService.instance.scheduleTaskAlarm(
+        updatedTask,
+        promptPermission: true,
+      ),
     );
   }
 

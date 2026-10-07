@@ -90,7 +90,7 @@ class ScreenTimeAccessibilityService : AccessibilityService() {
         val usage = UsageStatsHelper.getTodayUsageMinutes(this)
         val used = usage[pkg] ?: 0
 
-        if (used >= limit.limitMinutes) {
+        if (used >= limit.limitMinutes && limit.isStrictLock) {
             val now = System.currentTimeMillis()
             if (now - lastKickAt >= KICK_COOLDOWN_MS) {
                 lastKickAt = now
@@ -115,6 +115,9 @@ class ScreenTimeAccessibilityService : AccessibilityService() {
                         packageName = obj.optString("packageName"),
                         appName = obj.optString("appName"),
                         limitMinutes = obj.optInt("limitMinutes", 0),
+                        notifyAt10Min = obj.optBoolean("notifyAt10Min", true),
+                        notifyAt5Min = obj.optBoolean("notifyAt5Min", true),
+                        isStrictLock = obj.optBoolean("isStrictLock", true),
                         isEnabled = obj.optBoolean("isEnabled", true)
                     )
                 )

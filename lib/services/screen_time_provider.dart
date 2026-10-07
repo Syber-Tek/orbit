@@ -15,6 +15,10 @@ class ScreenTimeState {
   final bool hasAccessibility;
   final bool isMonitorRunning;
 
+  /// `yyyy-MM-dd` of the last usage refresh. Usage is reset when it no longer
+  /// matches today so stale values cannot carry a limit into the next day.
+  final String? day;
+
   const ScreenTimeState({
     required this.apps,
     this.dailyGoalMinutes = 240, // 4 hours
@@ -23,6 +27,7 @@ class ScreenTimeState {
     this.hasUsagePermission = false,
     this.hasAccessibility = false,
     this.isMonitorRunning = false,
+    this.day,
   });
 
   int get totalMinutesSpent =>
@@ -61,6 +66,7 @@ class ScreenTimeState {
     bool? hasUsagePermission,
     bool? hasAccessibility,
     bool? isMonitorRunning,
+    String? day,
   }) {
     return ScreenTimeState(
       apps: apps ?? this.apps,
@@ -70,6 +76,7 @@ class ScreenTimeState {
       hasUsagePermission: hasUsagePermission ?? this.hasUsagePermission,
       hasAccessibility: hasAccessibility ?? this.hasAccessibility,
       isMonitorRunning: isMonitorRunning ?? this.isMonitorRunning,
+      day: day ?? this.day,
     );
   }
 }
@@ -180,7 +187,13 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
     }
   }
 
-  /// Polls real OS usage stats and system permission statuses from the native Kotlin engine.
+  static String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Polls real OS usage stats and system permission statuses from the native
+  /// Kotlin engine.
   Future<void> refreshPermissionsAndUsage() async {
     if (defaultTargetPlatform != TargetPlatform.android) return;
     try {
@@ -194,6 +207,8 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
               false;
 
       Map<String, int> nativeUsage = {};
+      List<int> hourly = const [0, 0, 0, 0, 0, 0];
+      int pickups = 0;
       if (hasUsage) {
         final rawMap = await _platform
             .invokeMethod<Map<Object?, Object?>>('getTodayUsageStats');
@@ -202,27 +217,70 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
             (k, v) => MapEntry(k.toString(), (v as num).toInt()),
           );
         }
+        final stats = await _platform
+            .invokeMethod<Map<Object?, Object?>>('getScreenTimeStats');
+        if (stats != null) {
+          final rawHourly = stats['hourlyUsage'];
+          if (rawHourly is List && rawHourly.length == 6) {
+            hourly = rawHourly.map((e) => (e as num).toInt()).toList();
+          }
+          pickups = (stats['pickups'] as num?)?.toInt() ?? 0;
+        }
       }
 
-      final updatedApps = state.apps.map((app) {
-        final used = nativeUsage[app.packageName];
-        if (used != null) {
-          return app.copyWith(timeSpentMinutes: used);
+      // A new day starts fresh: zero any usage that persisted from yesterday
+      // so limits are never stuck "locked" across midnight.
+      final today = _todayKey();
+      var baseline = state.apps;
+      if (state.day != today) {
+        _firedWarnings.clear();
+        baseline =
+            baseline.map((app) => app.copyWith(timeSpentMinutes: 0)).toList();
+        hourly = const [0, 0, 0, 0, 0, 0];
+        pickups = 0;
+      }
+
+      final List<AppUsageItem> merged;
+      if (hasUsage) {
+        merged = baseline
+            .map(
+              (app) => app.copyWith(
+                timeSpentMinutes: nativeUsage[app.packageName] ?? 0,
+              ),
+            )
+            .toList();
+      } else {
+        // Without usage access there is nothing fresher than the stored value.
+        merged = baseline;
+      }
+
+      // Detect limit crossings, but only when the native monitor is not the
+      // one posting warnings — otherwise the same limit notifies twice.
+      if (!isRunning) {
+        for (var i = 0; i < merged.length; i++) {
+          final before = baseline[i];
+          final after = merged[i];
+          if (before.timeSpentMinutes != after.timeSpentMinutes) {
+            await _notifyOnCrossing(before, after);
+          }
         }
-        return app;
-      }).toList();
+      }
 
       state = state.copyWith(
-        apps: updatedApps,
+        apps: merged,
+        day: today,
+        pickupsToday: pickups,
+        hourlyUsage: hourly,
         hasUsagePermission: hasUsage,
         hasAccessibility: hasA11y,
         isMonitorRunning: isRunning,
       );
 
       // If user enabled limits and granted usage access, make sure monitor service is running
-      if (hasUsage && state.apps.any((a) => a.hasLimit) && !isRunning) {
+      if (hasUsage && merged.any((a) => a.hasLimit) && !isRunning) {
         await _platform.invokeMethod<bool>('startMonitorService');
       }
+      unawaited(_persist());
     } catch (e) {
       debugPrint('ScreenTimeNotifier.refreshPermissionsAndUsage error: $e');
     }
@@ -318,7 +376,9 @@ class ScreenTimeNotifier extends Notifier<ScreenTimeState> {
     );
 
     final after = state.apps.where((app) => app.id == id).firstOrNull;
-    if (after != null) unawaited(_notifyOnCrossing(before, after));
+    if (after != null && !state.isMonitorRunning) {
+      unawaited(_notifyOnCrossing(before, after));
+    }
     unawaited(_persist());
   }
 

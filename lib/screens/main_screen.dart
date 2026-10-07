@@ -19,6 +19,7 @@ import 'package:orbit/widgets/add_task_sheet.dart';
 import 'package:orbit/widgets/add_transaction_sheet.dart';
 import 'package:orbit/widgets/liquid_glass_nav_bar.dart';
 import 'package:orbit/widgets/note_editor_sheet.dart';
+import 'package:orbit/widgets/notification_permission_sheet.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -35,6 +36,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   void initState() {
     super.initState();
     _setupNotificationActionHandler();
+    _maybeShowNotificationPermissionSheet();
   }
 
   void _setupNotificationActionHandler() {
@@ -47,12 +49,67 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         for (final task in tasks) {
           if (task.id == taskId) {
             await NotificationService.instance
-                .scheduleSnooze(task, settings.snoozeMinutes);
+                .scheduleSnooze(task, minutes: settings.snoozeMinutes);
             break;
           }
         }
       }
     };
+    NotificationService.instance.payloadHandler = (payload) async {
+      if (payload.startsWith('screentime:')) {
+        _switchToTab(2);
+        return;
+      }
+      // Notes and streak reminders open the home tab, which hosts them.
+      _switchToTab(0);
+    };
+  }
+
+  void _switchToTab(int index) {
+    if (!mounted) return;
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeInOutCubic,
+    );
+    PersistenceService.instance.saveActiveTab(index);
+  }
+
+  Future<void> _maybeShowNotificationPermissionSheet() async {
+    await NotificationService.instance.init();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final prefs = await PersistenceService.instance.init();
+      final dismissed =
+          prefs.getBool('orbit.notif.permission_dismissed') ?? false;
+      if (dismissed) return;
+      if (await NotificationService.instance.notificationsEnabled()) {
+        await prefs.setBool('orbit.notif.permission_dismissed', true);
+        return;
+      }
+      if (!mounted) return;
+      _showNotificationPermissionSheet();
+    });
+  }
+
+  void _showNotificationPermissionSheet() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => NotificationPermissionSheet(
+        onNotNow: () async {
+          Navigator.pop(context);
+          final prefs = await PersistenceService.instance.init();
+          await prefs.setBool('orbit.notif.permission_dismissed', true);
+        },
+        onEnable: () async {
+          Navigator.pop(context);
+          await NotificationService.instance.requestPermission();
+          final prefs = await PersistenceService.instance.init();
+          await prefs.setBool('orbit.notif.permission_dismissed', true);
+        },
+      ),
+    );
   }
 
   @override
@@ -730,6 +787,93 @@ class _SettingsSheet extends ConsumerWidget {
                             ),
                           ],
                         ),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    // Streak Reminder
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Streak Reminder',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Daily nudge to finish today\'s habits before the day ends',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color:
+                                          theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch.adaptive(
+                              value: notifSettings.streakReminderEnabled,
+                              activeTrackColor: theme.colorScheme.primary,
+                              onChanged: (val) {
+                                ref
+                                    .read(notificationSettingsProvider.notifier)
+                                    .setStreakReminderEnabled(val);
+                              },
+                            ),
+                          ],
+                        ),
+                        if (notifSettings.streakReminderEnabled) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              _buildOptionChip(
+                                context: context,
+                                label: '6 PM',
+                                isSelected:
+                                    notifSettings.streakReminderHour == 18,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                          notificationSettingsProvider.notifier)
+                                      .setStreakReminderHour(18);
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _buildOptionChip(
+                                context: context,
+                                label: '8 PM',
+                                isSelected:
+                                    notifSettings.streakReminderHour == 20,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                          notificationSettingsProvider.notifier)
+                                      .setStreakReminderHour(20);
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _buildOptionChip(
+                                context: context,
+                                label: '10 PM',
+                                isSelected:
+                                    notifSettings.streakReminderHour == 22,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                          notificationSettingsProvider.notifier)
+                                      .setStreakReminderHour(22);
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ],
