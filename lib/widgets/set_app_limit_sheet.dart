@@ -224,7 +224,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'DAILY APP LIMIT',
+                  'Daily App Limit',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -442,7 +442,7 @@ class _SetAppLimitSheetState extends ConsumerState<SetAppLimitSheet> {
 
             // Notification & Restriction Rules
             Text(
-              'CLOSING & WARNING ALERTS',
+              'Closing & Warning alerts',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,

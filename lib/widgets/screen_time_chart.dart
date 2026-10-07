@@ -35,7 +35,7 @@ class ScreenTimeChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ACTIVITY DISTRIBUTION',
+                'Activity Distribution ',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,

@@ -170,7 +170,7 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
 
                 // Monthly Ceiling Control Box
                 Text(
-                  'MONTHLY BUDGET CEILING',
+                  'Monthly Budget Ceiling ',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -306,7 +306,7 @@ class _SetBudgetSheetState extends ConsumerState<SetBudgetSheet> {
 
                 // Daily Target Cap Control Box
                 Text(
-                  'DAILY SPENDING CAP',
+                  'Daily Spending Cap',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,

@@ -239,7 +239,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
 
             // Section: Scheduled Day
             Text(
-              'DAY',
+              'Day',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,

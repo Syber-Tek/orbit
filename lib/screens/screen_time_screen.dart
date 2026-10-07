@@ -245,7 +245,7 @@ class _ScreenTimeScreenState extends ConsumerState<ScreenTimeScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'SCREEN TIME TODAY',
+                          'Screen Time Today',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -421,7 +421,7 @@ class _ScreenTimeScreenState extends ConsumerState<ScreenTimeScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'APP LIMITS & USAGE',
+                  'App Limits & Usage',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
