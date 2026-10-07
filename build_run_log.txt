@@ -189,3 +189,6 @@ I/m.example.orbit( 6761): Background concurrent mark compact GC freed 772KB Allo
 I/m.example.orbit( 6761): Background young concurrent mark compact GC freed 1000KB AllocSpace bytes, 32(2656KB) LOS objects, 49% free, 3677KB/7226KB, paused 147us,5.450ms total 20.935ms
 I/m.example.orbit( 6761): Background concurrent mark compact GC freed 820KB AllocSpace bytes, 38(2968KB) LOS objects, 49% free, 3649KB/7298KB, paused 230us,5.347ms total 26.398ms
 I/m.example.orbit( 6761): Background concurrent mark compact GC freed 844KB AllocSpace bytes, 37(3164KB) LOS objects, 49% free, 3241KB/6482KB, paused 177us,5.676ms total 26.587ms
+I/ScrollIdentify( 6761): on fling
+I/ScrollIdentify( 6761): on fling
+I/m.example.orbit( 6761): Background young concurrent mark compact GC freed 1500KB AllocSpace bytes, 19(1732KB) LOS objects, 49% free, 3293KB/6482KB, paused 165us,6.356ms total 23.801ms
