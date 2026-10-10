@@ -3,11 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:iconly_plus/iconly_plus.dart';
 import 'package:orbit/utils/app_haptics.dart';
 
-typedef NavItemWidgetBuilder = Widget Function(
-  BuildContext context,
-  bool isSelected,
-  Color color,
-);
+typedef NavItemWidgetBuilder =
+    Widget Function(BuildContext context, bool isSelected, Color color);
 
 class LiquidNavItem {
   final IconData? icon;
@@ -20,7 +17,10 @@ class LiquidNavItem {
     this.activeIcon,
     this.builder,
     required this.label,
-  }) : assert(icon != null || builder != null, 'Either icon or builder must be provided');
+  }) : assert(
+         icon != null || builder != null,
+         'Either icon or builder must be provided',
+       );
 }
 
 /// Target Circle with Arrow icon matching reference image ae955170a457f291c2a6c3e2e1d3a231.jpg
@@ -138,7 +138,9 @@ class LiquidGlassNavBar extends StatelessWidget {
                 color: isDark
                     ? Colors.black.withValues(alpha: 0.82)
                     : Colors.white.withValues(alpha: 0.92),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
                 border: Border.all(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.16)
@@ -169,9 +171,8 @@ class LiquidGlassNavBar extends StatelessWidget {
                         children: [
                           Text(
                             'Add New',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           IconButton(
                             icon: const Icon(Icons.close_rounded, size: 20),
@@ -185,7 +186,6 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.home,
                         title: 'Habit',
                         subtitle: 'Track a new daily routine or goal',
-                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddHabit?.call();
@@ -197,7 +197,6 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.timeCircle,
                         title: 'Task',
                         subtitle: 'Add a todo, reminder, or alarm',
-                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddTodo?.call();
@@ -209,7 +208,6 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.chart,
                         title: 'Screen Time',
                         subtitle: 'Set a daily app boundary or limit',
-                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddAppLimit?.call();
@@ -221,7 +219,6 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.wallet,
                         title: 'Ledger',
                         subtitle: 'Log an expense, budget, or transaction',
-                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddExpense?.call();
@@ -233,7 +230,6 @@ class LiquidGlassNavBar extends StatelessWidget {
                         icon: IconlyBold.document,
                         title: 'Note',
                         subtitle: 'Create a rich-text document',
-                        accentColor: const Color(0xFF7C5CFF),
                         onTap: () {
                           Navigator.pop(ctx);
                           onAddNote?.call();
@@ -255,10 +251,13 @@ class LiquidGlassNavBar extends StatelessWidget {
     required IconData icon,
     required String title,
     required String subtitle,
-    required Color accentColor,
     required VoidCallback onTap,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? Colors.white : const Color(0xFF18181B);
+    final iconBackground = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.black.withValues(alpha: 0.06);
 
     return Material(
       color: Colors.transparent,
@@ -284,12 +283,10 @@ class LiquidGlassNavBar extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.16),
+                  color: iconBackground,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Center(
-                  child: Icon(icon, color: accentColor, size: 22),
-                ),
+                child: Center(child: Icon(icon, color: iconColor, size: 22)),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -306,9 +303,9 @@ class LiquidGlassNavBar extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontSize: 12,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(fontSize: 12),
                     ),
                   ],
                 ),
@@ -353,15 +350,23 @@ class LiquidGlassNavBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(36),
                     border: Border.all(
                       color: isDark
-                          ? const Color(0xFF2A2B30).withValues(alpha: (opacity + 0.18).clamp(0.1, 1.0))
-                          : const Color(0xFFE5E5DF).withValues(alpha: (opacity + 0.18).clamp(0.1, 1.0)),
+                          ? const Color(0xFF2A2B30).withValues(
+                              alpha: (opacity + 0.18).clamp(0.1, 1.0),
+                            )
+                          : const Color(0xFFE5E5DF).withValues(
+                              alpha: (opacity + 0.18).clamp(0.1, 1.0),
+                            ),
                       width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: isDark
-                            ? Colors.black.withValues(alpha: (0.35 * opacity).clamp(0.1, 0.35))
-                            : Colors.black.withValues(alpha: (0.05 * opacity).clamp(0.02, 0.05)),
+                            ? Colors.black.withValues(
+                                alpha: (0.35 * opacity).clamp(0.1, 0.35),
+                              )
+                            : Colors.black.withValues(
+                                alpha: (0.05 * opacity).clamp(0.02, 0.05),
+                              ),
                         blurRadius: 24,
                         spreadRadius: 0,
                         offset: const Offset(0, 6),
@@ -422,33 +427,53 @@ class LiquidGlassNavBar extends StatelessWidget {
                                   child: AnimatedSwitcher(
                                     duration: const Duration(milliseconds: 200),
                                     transitionBuilder: (child, anim) =>
-                                        ScaleTransition(scale: anim, child: child),
+                                        ScaleTransition(
+                                          scale: anim,
+                                          child: child,
+                                        ),
                                     child: item.builder != null
                                         ? KeyedSubtree(
-                                            key: ValueKey('${item.label}_$isSelected'),
+                                            key: ValueKey(
+                                              '${item.label}_$isSelected',
+                                            ),
                                             child: item.builder!(
                                               context,
                                               isSelected,
                                               isSelected
-                                                  ? (isDark ? Colors.white : Colors.black87)
+                                                  ? (isDark
+                                                        ? Colors.white
+                                                        : Colors.black87)
                                                   : (isDark
-                                                      ? Colors.white.withValues(alpha: 0.40)
-                                                      : Colors.black.withValues(alpha: 0.35)),
+                                                        ? Colors.white
+                                                              .withValues(
+                                                                alpha: 0.40,
+                                                              )
+                                                        : Colors.black
+                                                              .withValues(
+                                                                alpha: 0.35,
+                                                              )),
                                             ),
                                           )
                                         : Icon(
                                             isSelected
-                                                ? (item.activeIcon ?? item.icon!)
+                                                ? (item.activeIcon ??
+                                                      item.icon!)
                                                 : item.icon!,
-                                            key: ValueKey('${item.label}_$isSelected'),
+                                            key: ValueKey(
+                                              '${item.label}_$isSelected',
+                                            ),
                                             size: 24,
                                             color: isSelected
                                                 ? (isDark
-                                                    ? Colors.white
-                                                    : Colors.black87)
+                                                      ? Colors.white
+                                                      : Colors.black87)
                                                 : (isDark
-                                                    ? Colors.white.withValues(alpha: 0.40)
-                                                    : Colors.black.withValues(alpha: 0.35)),
+                                                      ? Colors.white.withValues(
+                                                          alpha: 0.40,
+                                                        )
+                                                      : Colors.black.withValues(
+                                                          alpha: 0.35,
+                                                        )),
                                           ),
                                   ),
                                 ),
@@ -472,7 +497,9 @@ class LiquidGlassNavBar extends StatelessWidget {
               height: 58,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDark ? const Color(0xFFEDEDEA) : const Color(0xFF18181B),
+                color: isDark
+                    ? const Color(0xFFEDEDEA)
+                    : const Color(0xFF18181B),
                 boxShadow: [
                   BoxShadow(
                     color: isDark

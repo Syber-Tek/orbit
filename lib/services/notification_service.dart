@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,14 +12,13 @@ import 'package:orbit/models/habit.dart';
 import 'package:orbit/models/note.dart';
 import 'package:orbit/models/screen_time.dart';
 import 'package:orbit/models/task.dart';
+import 'package:orbit/services/native_alarm_service.dart';
 import 'package:orbit/services/persistence_service.dart';
 
-/// Android raw resource for the alarm beep. Kept in
-/// `android/app/src/main/res/raw/orbit_alarm.mp3`. A single delivery plays it
-/// once, so the 2-minute ring relies on FLAG_INSISTENT looping it until the
-/// user acts or the configured duration ends.
-const String _kAlarmSoundResource = 'orbit_alarm';
-
+/// Android raw resource note: task alarms now ring through the native
+/// [RingAlarmService] MediaPlayer loop so the configured duration (default
+/// 2 minutes) is honoured on every device. This file keeps the constant out of
+/// the way of the notification plugin.
 const String _kLimitWarningChannelBase = 'orbit_limit_warnings';
 const String _kNoteReminderChannel = 'orbit_note_reminders';
 const String _kStreakChannel = 'orbit_streak_reminders';
@@ -69,13 +68,6 @@ typedef NotificationActionHandler =
 /// Lets the app jump to the tab the notification belongs to.
 typedef NotificationPayloadHandler = Future<void> Function(String payload);
 
-/// Android freezes a channel's sound and vibration the first time it is
-/// created, so toggling either setting is expressed as a distinct channel id
-/// rather than an in-place update.
-String _alarmChannelId({required bool sound, required bool vibration}) {
-  return 'orbit_alarms_${sound ? 'snd' : 'mut'}_${vibration ? 'vib' : 'novib'}';
-}
-
 /// The concrete instant a task alarm should fire, or null when the task has no
 /// alarm, no time, or its time has already passed.
 tz.TZDateTime? alarmDateTimeFor(TaskItem task) {
@@ -109,6 +101,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
+  MethodChannel? _actionsChannel;
+
   bool _initialised = false;
   bool _timezoneResolved = false;
   bool _permissionGranted = false;
@@ -133,12 +127,14 @@ class NotificationService {
       _kNoteReminderIdBase + _stableId(noteId);
 
   static String? taskIdFromPayload(String? payload) {
-    if (payload == null || !payload.startsWith(_kPayloadTaskPrefix)) return null;
+    if (payload == null || !payload.startsWith(_kPayloadTaskPrefix))
+      return null;
     return payload.substring(_kPayloadTaskPrefix.length);
   }
 
   static String? noteIdFromPayload(String? payload) {
-    if (payload == null || !payload.startsWith(_kPayloadNotePrefix)) return null;
+    if (payload == null || !payload.startsWith(_kPayloadNotePrefix))
+      return null;
     return payload.substring(_kPayloadNotePrefix.length);
   }
 
@@ -187,6 +183,52 @@ class NotificationService {
       _initialised = true;
     } catch (error, stack) {
       debugPrint('NotificationService init failed: $error\n$stack');
+    }
+
+    // Actions from the native ring notification (Snooze handled natively;
+    // Mark done and body taps route here for persistence and UI navigation).
+    _actionsChannel = MethodChannel('com.example.orbit/alarm_actions');
+    _actionsChannel!.setMethodCallHandler((call) async {
+      if (call.method != 'applyAction') return null;
+      final args = call.arguments;
+      if (args is! Map) return null;
+      final action = args['action']?.toString() ?? '';
+      final taskId = args['taskId']?.toString() ?? '';
+      if (taskId.isEmpty) return null;
+
+      if (action == 'done') {
+        await applyActionToDisk(kActionDismiss, taskId);
+        final handler = actionHandler;
+        if (handler != null) {
+          await handler(kActionDismiss, taskId);
+        }
+      } else if (action == 'open') {
+        final handler = payloadHandler;
+        if (handler != null) {
+          await handler('task:$taskId');
+        }
+      }
+      return null;
+    });
+
+    // Older builds scheduled task alarms through the notification plugin;
+    // clear any that may still be pending so a stale beep never rings twice.
+    unawaited(_purgeLegacyTaskAlarms());
+  }
+
+  /// Removes pending plugin-scheduled task alarms that predate the native
+  /// scheduler. Task ids always live in [_kTaskAlarmIdBase, +_kIdSpace).
+  Future<void> _purgeLegacyTaskAlarms() async {
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      for (final request in pending) {
+        if (request.id >= _kTaskAlarmIdBase &&
+            request.id < _kTaskAlarmIdBase + _kIdSpace) {
+          await _safeCancel(request.id);
+        }
+      }
+    } catch (error) {
+      debugPrint('Failed to purge legacy task alarms: $error');
     }
   }
 
@@ -290,8 +332,12 @@ class NotificationService {
           >();
       if (ios != null) {
         granted =
-            await ios.requestPermissions(alert: true, badge: true, sound: true) ??
-                false;
+            await ios.requestPermissions(
+              alert: true,
+              badge: true,
+              sound: true,
+            ) ??
+            false;
       }
 
       _permissionGranted = granted;
@@ -442,7 +488,6 @@ class NotificationService {
     }
   }
 
-
   /// Reads the persisted preferences directly so this works in any isolate.
   Future<_AlarmPrefs> _readPrefs() async {
     try {
@@ -451,8 +496,6 @@ class NotificationService {
         vibration: prefs.getBool('orbit.notif.vibration') ?? true,
         sound: prefs.getBool('orbit.notif.sound') ?? true,
         snoozeMinutes: prefs.getInt('orbit.notif.snooze_minutes') ?? 10,
-        alarmDurationMinutes:
-            prefs.getInt('orbit.notif.alarm_duration_minutes') ?? 2,
         bypassDnd: prefs.getBool('orbit.notif.bypass_dnd') ?? false,
       );
     } catch (error) {
@@ -461,7 +504,8 @@ class NotificationService {
     }
   }
 
-  /// Arms (or re-arms) the OS alarm for a single task.
+  /// Arms (or re-arms) the OS alarm for a single task via the native
+  /// AlarmManager scheduler, which rings through a foreground service loop.
   ///
   /// [promptPermission] is set only for explicit user actions (creating,
   /// editing or toggling an alarm) so the one-time notification prompt lands
@@ -473,25 +517,22 @@ class NotificationService {
     await init();
     if (!_initialised) return;
 
-    final id = taskNotificationId(task.id);
-    await _safeCancel(id);
+    // Drop any plugin-scheduled alarm that predates the native scheduler.
+    await _safeCancel(taskNotificationId(task.id));
 
     final when = alarmDateTimeFor(task);
-    if (when == null) return;
-    if (!_permissionGranted &&
-        promptPermission &&
-        !await requestPermission()) {
+    if (when == null) {
+      await NativeAlarmService.instance.cancelTaskAlarm(task.id);
+      return;
+    }
+    if (!_permissionGranted && promptPermission && !await requestPermission()) {
       return;
     }
 
-    final prefs = await _readPrefs();
-    await _scheduleAt(
-      id: id,
+    await NativeAlarmService.instance.scheduleTaskAlarm(
+      taskId: task.id,
       title: task.title,
-      body: _taskBody(task),
-      when: when,
-      details: _alarmDetails(prefs),
-      payload: '$_kPayloadTaskPrefix${task.id}',
+      whenMs: when.millisecondsSinceEpoch,
     );
   }
 
@@ -504,80 +545,20 @@ class NotificationService {
 
     final prefs = await _readPrefs();
     final snoozeFor = minutes ?? prefs.snoozeMinutes;
-    final when =
-        tz.TZDateTime.now(tz.local).add(Duration(minutes: snoozeFor));
-    await _scheduleAt(
-      id: taskNotificationId(task.id),
+    final when = tz.TZDateTime.now(tz.local).add(Duration(minutes: snoozeFor));
+    await _safeCancel(taskNotificationId(task.id));
+    await NativeAlarmService.instance.scheduleTaskAlarm(
+      taskId: task.id,
       title: task.title,
-      body: 'Snoozed ${snoozeFor}m • ${task.title}',
-      when: when,
-      details: _alarmDetails(prefs),
-      payload: '$_kPayloadTaskPrefix${task.id}',
+      whenMs: when.millisecondsSinceEpoch,
     );
-  }
-
-  NotificationDetails _alarmDetails(_AlarmPrefs prefs) {
-    // 4 is Notification.FLAG_INSISTENT: loops sound/vibration repeatedly until dismissed/snoozed
-    final additionalFlags = Int32List.fromList([4]);
-    // Timeout after the configured duration in minutes (default: 2 minutes = 120,000 ms)
-    final timeoutMs = prefs.alarmDurationMinutes * 60 * 1000;
-
-    return NotificationDetails(
-      android: AndroidNotificationDetails(
-        _alarmChannelId(sound: prefs.sound, vibration: prefs.vibration),
-        'Task Alarms',
-        channelDescription: 'Reminders for scheduled Orbit tasks',
-        importance: Importance.max,
-        priority: Priority.high,
-        playSound: prefs.sound,
-        sound: prefs.sound
-            ? const RawResourceAndroidNotificationSound(_kAlarmSoundResource)
-            : null,
-        enableVibration: prefs.vibration,
-        vibrationPattern: prefs.vibration ? _alarmVibration : null,
-        channelBypassDnd: prefs.bypassDnd,
-        category: AndroidNotificationCategory.alarm,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
-        additionalFlags: additionalFlags,
-        timeoutAfter: timeoutMs,
-        // Stay on screen until snoozed or dismissed, like a real alarm.
-        ongoing: true,
-        autoCancel: false,
-        actions: _androidActions(prefs.snoozeMinutes),
-      ),
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: prefs.sound,
-        categoryIdentifier: _kAlarmCategoryId,
-        interruptionLevel: prefs.bypassDnd
-            ? InterruptionLevel.critical
-            : InterruptionLevel.timeSensitive,
-      ),
-    );
-  }
-
-  List<AndroidNotificationAction> _androidActions(int snoozeMinutes) {
-    return [
-      AndroidNotificationAction(
-        kActionSnooze,
-        'Snooze ${snoozeMinutes}m',
-        cancelNotification: true,
-        showsUserInterface: false,
-      ),
-      AndroidNotificationAction(
-        kActionDismiss,
-        'Mark done',
-        cancelNotification: true,
-        showsUserInterface: false,
-      ),
-    ];
   }
 
   Future<void> cancelTaskAlarm(String taskId) async {
     await init();
     if (!_initialised) return;
     await _safeCancel(taskNotificationId(taskId));
+    await NativeAlarmService.instance.cancelTaskAlarm(taskId);
   }
 
   /// Rebuilds every armed alarm from scratch. Used on launch so the OS queue
@@ -586,28 +567,12 @@ class NotificationService {
     await init();
     if (!_initialised) return;
 
-    final armed = <int>{};
     for (final task in tasks) {
-      final id = taskNotificationId(task.id);
-      armed.add(id);
       if (alarmDateTimeFor(task) != null) {
         await scheduleTaskAlarm(task);
       } else {
-        await _safeCancel(id);
+        await cancelTaskAlarm(task.id);
       }
-    }
-
-    try {
-      final pending = await _plugin.pendingNotificationRequests();
-      for (final request in pending) {
-        if (request.id < _kTaskAlarmIdBase) continue;
-        if (request.id < _kTaskAlarmIdBase + _kIdSpace &&
-            !armed.contains(request.id)) {
-          await _safeCancel(request.id);
-        }
-      }
-    } catch (error) {
-      debugPrint('Failed to prune orphaned task alarms: $error');
     }
   }
 
@@ -736,7 +701,14 @@ class NotificationService {
     }
 
     final now = tz.TZDateTime.now(tz.local);
-    var when = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var when = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     if (!when.isAfter(now)) {
       when = when.add(const Duration(days: 1));
     }
@@ -766,7 +738,8 @@ class NotificationService {
       await _plugin.show(
         id: _kStreakMilestoneIdBase + _stableId(habit.id),
         title: '${habit.streak} day streak!',
-        body: '${habit.title} has run for ${habit.streak} days in a row. Keep it going.',
+        body:
+            '${habit.title} has run for ${habit.streak} days in a row. Keep it going.',
         notificationDetails: _reminderDetails(prefs, streak: true),
         payload: _kPayloadStreak,
       );
@@ -775,7 +748,10 @@ class NotificationService {
     }
   }
 
-  NotificationDetails _reminderDetails(_AlarmPrefs prefs, {bool streak = false}) {
+  NotificationDetails _reminderDetails(
+    _AlarmPrefs prefs, {
+    bool streak = false,
+  }) {
     final channel = streak ? _kStreakChannel : _kNoteReminderChannel;
     final name = streak ? 'Streak Reminders' : 'Note Reminders';
     final description = streak
@@ -821,11 +797,6 @@ class NotificationService {
     }
   }
 
-  String _taskBody(TaskItem task) {
-    final priority = task.priority == TaskPriority.high ? ' (High)' : '';
-    return '${task.category.label}$priority • ${task.title}';
-  }
-
   static const Set<int> _streakMilestones = {
     3,
     7,
@@ -845,30 +816,18 @@ class NotificationService {
     if (text.isEmpty) return 'Your note is waiting.';
     return text.length > 120 ? '${text.substring(0, 117)}…' : text;
   }
-
-  /// Double-tap-then-pause buzz, repeated, so it is distinguishable from a
-  /// message notification.
-  static final Int64List _alarmVibration = Int64List.fromList([
-    0,
-    400,
-    200,
-    400,
-    1000,
-  ]);
 }
 
 class _AlarmPrefs {
   final bool vibration;
   final bool sound;
   final int snoozeMinutes;
-  final int alarmDurationMinutes;
   final bool bypassDnd;
 
   const _AlarmPrefs({
     this.vibration = true,
     this.sound = true,
     this.snoozeMinutes = 10,
-    this.alarmDurationMinutes = 2,
     this.bypassDnd = false,
   });
 }

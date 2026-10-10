@@ -18,6 +18,9 @@ class BootReceiver : BroadcastReceiver() {
                 val serviceIntent = Intent(context, AppMonitorService::class.java)
                 ContextCompat.startForegroundService(context, serviceIntent)
             }
+
+            // Re-arm task alarms that survive a reboot or package update.
+            TaskAlarmScheduler.rescheduleAll(context)
         }
     }
 }
