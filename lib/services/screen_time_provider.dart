@@ -562,7 +562,23 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
 
   void start() {
     if (state.isRunning) return;
-    state = state.copyWith(isRunning: true);
+
+    // A completed (or already elapsed) session restarts from the full
+    // duration; otherwise the countdown begins with 0 seconds left and
+    // immediately completes again, which reads as "Start does nothing".
+    if (state.isCompleted || state.remainingSeconds <= 0) {
+      state = FocusSession(
+        id: state.id,
+        title: state.title,
+        targetMinutes: state.targetMinutes,
+        elapsedSeconds: 0,
+        isRunning: true,
+        isCompleted: false,
+      );
+    } else {
+      state = state.copyWith(isRunning: true);
+    }
+
     unawaited(
       FocusForegroundService.instance.start(
         title: state.title,
@@ -575,20 +591,27 @@ class FocusSessionNotifier extends Notifier<FocusSession> {
 
   void _beginTicking() {
     _timer?.cancel();
+    final endWallClock = DateTime.now().add(
+      Duration(seconds: state.remainingSeconds),
+    );
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!state.isRunning) {
         timer.cancel();
         return;
       }
-      if (state.elapsedSeconds + 1 >= state.targetMinutes * 60) {
+      final total = state.targetMinutes * 60;
+      final leftMs = endWallClock.difference(DateTime.now()).inMilliseconds;
+      var elapsed = total - ((leftMs + 999) ~/ 1000);
+      if (elapsed < 0) elapsed = 0;
+      if (elapsed >= total) {
         timer.cancel();
         state = state.copyWith(
-          elapsedSeconds: state.targetMinutes * 60,
+          elapsedSeconds: total,
           isRunning: false,
           isCompleted: true,
         );
       } else {
-        state = state.copyWith(elapsedSeconds: state.elapsedSeconds + 1);
+        state = state.copyWith(elapsedSeconds: elapsed);
       }
     });
   }

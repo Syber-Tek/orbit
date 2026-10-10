@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- Keep Orbit alive in the background (system prompt asks once at launch) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <application
         android:label="orbit"
         android:name="${applicationName}"
@@ -73,6 +75,21 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Focus Timer" />
+        </service>
+
+        <!-- Fires when an armed task alarm is due and starts the ring service -->
+        <receiver
+            android:name=".TaskAlarmReceiver"
+            android:exported="false"/>
+
+        <!-- Loops the alarm sound natively for the configured ring duration -->
+        <service
+            android:name=".RingAlarmService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Ring Alarm Sound" />
         </service>
 
         <!-- Screen Time Active App Blocker Accessibility Service -->

@@ -36,6 +36,7 @@ class AppMonitorService : Service() {
         const val NOTIFICATION_ID_FOREGROUND = 1001
         const val POLL_INTERVAL_MS = 10_000L
         const val KICK_COOLDOWN_MS = 30_000L
+        const val REASSERT_INTERVAL_MS = 45_000L
     }
 
     private var pollThread: HandlerThread? = null
@@ -44,10 +45,12 @@ class AppMonitorService : Service() {
     private var lastCheckDay = -1
     private val warnedThresholds = mutableSetOf<String>()
     private var lastKickAt = 0L
+    private var lastReassertAt = 0L
 
     private val pollRunnable = object : Runnable {
         override fun run() {
             try {
+                reassertForegroundNotification()
                 pollAndEnforce()
             } catch (t: Throwable) {
                 // Keep the background monitor resilient against errors
@@ -111,13 +114,23 @@ class AppMonitorService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+            val desiredImportance = NotificationManager.IMPORTANCE_DEFAULT
+            val existing = nm.getNotificationChannel(CHANNEL_MONITOR)
+            if (existing != null && existing.importance != desiredImportance) {
+                // Channel importance freezes once created. Recreate so the
+                // status sits in the normal notifications group, not "Silent".
+                nm.deleteNotificationChannel(CHANNEL_MONITOR)
+            }
+
             val monitorChan = NotificationChannel(
                 CHANNEL_MONITOR,
                 "Screen Time Monitoring",
-                NotificationManager.IMPORTANCE_LOW
+                desiredImportance
             ).apply {
                 description = "Shows that Orbit screen time monitor is actively protecting your digital wellbeing"
                 setShowBadge(false)
+                setSound(null, null)
+                enableVibration(false)
             }
 
             val alertChan = NotificationChannel(
@@ -150,7 +163,35 @@ class AppMonitorService : Service() {
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
+            .build().also {
+                // Permanent status: cannot be swiped or cleared from the panel.
+                it.flags = it.flags or
+                    Notification.FLAG_ONGOING_EVENT or
+                    Notification.FLAG_NO_CLEAR
+            }
+    }
+
+    /// Some OEMs (Infinix XOS, MIUI, …) let the user dismiss even ongoing
+    /// foreground notifications. Re-asserting the same notification id brings
+    /// it straight back, so the status chip can effectively never be removed.
+    private fun reassertForegroundNotification() {
+        val now = System.currentTimeMillis()
+        if (now - lastReassertAt < REASSERT_INTERVAL_MS) return
+        lastReassertAt = now
+        try {
+            val notification = buildForegroundNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID_FOREGROUND,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                startForeground(NOTIFICATION_ID_FOREGROUND, notification)
+            }
+        } catch (t: Throwable) {
+            // Keep the poll loop resilient.
+        }
     }
 
     private fun loadLimits(): List<NativeAppLimit> {

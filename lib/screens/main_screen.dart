@@ -19,7 +19,6 @@ import 'package:orbit/widgets/add_task_sheet.dart';
 import 'package:orbit/widgets/add_transaction_sheet.dart';
 import 'package:orbit/widgets/liquid_glass_nav_bar.dart';
 import 'package:orbit/widgets/note_editor_sheet.dart';
-import 'package:orbit/widgets/notification_permission_sheet.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -29,14 +28,50 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  late int _currentIndex = PersistenceService.instance.loadActiveTab().clamp(0, 3);
-  late final PageController _pageController = PageController(initialPage: _currentIndex);
+  late int _currentIndex = PersistenceService.instance.loadActiveTab().clamp(
+    0,
+    3,
+  );
+  late final PageController _pageController = PageController(
+    initialPage: _currentIndex,
+  );
 
   @override
   void initState() {
     super.initState();
     _setupNotificationActionHandler();
-    _maybeShowNotificationPermissionSheet();
+    _startAlwaysOnMonitoring();
+    _requestSystemNotificationPermission();
+    _requestBatteryExemption();
+  }
+
+  /// Starts the foreground monitor service so Orbit keeps running in the
+  /// background with a permanent status notification, like a system service.
+  Future<void> _startAlwaysOnMonitoring() async {
+    try {
+      await const MethodChannel(
+        'com.example.orbit/usage_stats',
+      ).invokeMethod('startMonitorService');
+    } catch (_) {
+      // Best-effort; the service also restarts on boot.
+    }
+  }
+
+  /// One-time system prompt asking to exempt Orbit from battery optimizations
+  /// so the OEM never freezes or kills it in the background.
+  Future<void> _requestBatteryExemption() async {
+    final prefs = await PersistenceService.instance.init();
+    if (prefs.getBool('orbit.battery_exemption_prompted') ?? false) return;
+    await prefs.setBool('orbit.battery_exemption_prompted', true);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await const MethodChannel(
+          'com.example.orbit/usage_stats',
+        ).invokeMethod('requestIgnoreBatteryOptimizations');
+      } catch (_) {
+        // Ignored when the OS dialog cannot be shown.
+      }
+    });
   }
 
   void _setupNotificationActionHandler() {
@@ -48,8 +83,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         final tasks = ref.read(taskListProvider);
         for (final task in tasks) {
           if (task.id == taskId) {
-            await NotificationService.instance
-                .scheduleSnooze(task, minutes: settings.snoozeMinutes);
+            await NotificationService.instance.scheduleSnooze(
+              task,
+              minutes: settings.snoozeMinutes,
+            );
             break;
           }
         }
@@ -75,41 +112,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     PersistenceService.instance.saveActiveTab(index);
   }
 
-  Future<void> _maybeShowNotificationPermissionSheet() async {
+  /// Asks via the OS permission dialog only — no custom onboarding UI.
+  Future<void> _requestSystemNotificationPermission() async {
     await NotificationService.instance.init();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      final prefs = await PersistenceService.instance.init();
-      final dismissed =
-          prefs.getBool('orbit.notif.permission_dismissed') ?? false;
-      if (dismissed) return;
-      if (await NotificationService.instance.notificationsEnabled()) {
-        await prefs.setBool('orbit.notif.permission_dismissed', true);
-        return;
-      }
-      if (!mounted) return;
-      _showNotificationPermissionSheet();
+      if (await NotificationService.instance.notificationsEnabled()) return;
+      await NotificationService.instance.requestPermission();
     });
-  }
-
-  void _showNotificationPermissionSheet() {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => NotificationPermissionSheet(
-        onNotNow: () async {
-          Navigator.pop(context);
-          final prefs = await PersistenceService.instance.init();
-          await prefs.setBool('orbit.notif.permission_dismissed', true);
-        },
-        onEnable: () async {
-          Navigator.pop(context);
-          await NotificationService.instance.requestPermission();
-          final prefs = await PersistenceService.instance.init();
-          await prefs.setBool('orbit.notif.permission_dismissed', true);
-        },
-      ),
-    );
   }
 
   @override
@@ -213,95 +223,95 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           );
         } else {
           // Move task to background without killing activity
-          const MethodChannel('com.example.orbit/usage_stats')
-              .invokeMethod('moveTaskToBack')
-              .catchError((_) {});
+          const MethodChannel(
+            'com.example.orbit/usage_stats',
+          ).invokeMethod('moveTaskToBack').catchError((_) {});
         }
       },
       child: Scaffold(
-      extendBody: true,
-      appBar: _currentIndex == 0
-          ? null
-          : AppBar(
-              title: Text(
-                _navItems[_currentIndex].label,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(IconlyLight.setting, size: 22),
-                  onPressed: () => _showSettingsSheet(context),
-                  tooltip: 'Settings & Theme',
-                  style: IconButton.styleFrom(
-                    backgroundColor: isDark
-                        ? const Color(0xFF1E1F25)
-                        : const Color(0xFFEEEEEE),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+        extendBody: true,
+        appBar: _currentIndex == 0
+            ? null
+            : AppBar(
+                title: Text(
+                  _navItems[_currentIndex].label,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(width: 14),
-              ],
+                actions: [
+                  IconButton(
+                    icon: const Icon(IconlyLight.setting, size: 22),
+                    onPressed: () => _showSettingsSheet(context),
+                    tooltip: 'Settings & Theme',
+                    style: IconButton.styleFrom(
+                      backgroundColor: isDark
+                          ? const Color(0xFF1E1F25)
+                          : const Color(0xFFEEEEEE),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                ],
+              ),
+        body: PageView(
+          controller: _pageController,
+          physics: const BouncingScrollPhysics(),
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+            PersistenceService.instance.saveActiveTab(index);
+          },
+          children: [
+            HabitsScreen(
+              key: const PageStorageKey('tab_habits'),
+              onNavigateTab: (index) {
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.easeInOutCubic,
+                );
+              },
+              onSettingsTap: () => _showSettingsSheet(context),
             ),
-      body: PageView(
-        controller: _pageController,
-        physics: const BouncingScrollPhysics(),
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-          PersistenceService.instance.saveActiveTab(index);
-        },
-        children: [
-          HabitsScreen(
-            key: const PageStorageKey('tab_habits'),
-            onNavigateTab: (index) {
-              _pageController.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 320),
-                curve: Curves.easeInOutCubic,
-              );
-            },
-            onSettingsTap: () => _showSettingsSheet(context),
-          ),
-          TasksScreen(
-            key: const PageStorageKey('tab_tasks'),
-            onSettingsTap: () => _showSettingsSheet(context),
-          ),
-          ScreenTimeScreen(
-            key: const PageStorageKey('tab_screen_time'),
-            onSettingsTap: () => _showSettingsSheet(context),
-          ),
-          LedgerScreen(
-            key: const PageStorageKey('tab_ledger'),
-            onSettingsTap: () => _showSettingsSheet(context),
-          ),
-        ],
+            TasksScreen(
+              key: const PageStorageKey('tab_tasks'),
+              onSettingsTap: () => _showSettingsSheet(context),
+            ),
+            ScreenTimeScreen(
+              key: const PageStorageKey('tab_screen_time'),
+              onSettingsTap: () => _showSettingsSheet(context),
+            ),
+            LedgerScreen(
+              key: const PageStorageKey('tab_ledger'),
+              onSettingsTap: () => _showSettingsSheet(context),
+            ),
+          ],
+        ),
+        bottomNavigationBar: LiquidGlassNavBar(
+          currentIndex: _currentIndex,
+          opacity: navBarOpacity,
+          onTap: (index) {
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeInOutCubic,
+            );
+          },
+          items: _navItems,
+          onAddHabit: () => _showAddHabit(context),
+          onAddExpense: () => _showAddExpense(context),
+          onAddTodo: () => _showAddTask(context),
+          onAddAppLimit: () => _showAddAppLimit(context),
+          onAddNote: () => _showAddNote(context),
+        ),
       ),
-      bottomNavigationBar: LiquidGlassNavBar(
-        currentIndex: _currentIndex,
-        opacity: navBarOpacity,
-        onTap: (index) {
-          _pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeInOutCubic,
-          );
-        },
-        items: _navItems,
-        onAddHabit: () => _showAddHabit(context),
-        onAddExpense: () => _showAddExpense(context),
-        onAddTodo: () => _showAddTask(context),
-        onAddAppLimit: () => _showAddAppLimit(context),
-        onAddNote: () => _showAddNote(context),
-      ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _SettingsSheet extends ConsumerWidget {
@@ -342,7 +352,9 @@ class _SettingsSheet extends ConsumerWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -368,7 +380,9 @@ class _SettingsSheet extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: theme.colorScheme.outline),
                 ),
@@ -430,7 +444,9 @@ class _SettingsSheet extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: theme.colorScheme.outline),
                 ),
@@ -462,7 +478,9 @@ class _SettingsSheet extends ConsumerWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.12,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -489,7 +507,9 @@ class _SettingsSheet extends ConsumerWidget {
                         activeTrackColor: theme.colorScheme.primary,
                         inactiveTrackColor: theme.colorScheme.outlineVariant,
                         thumbColor: theme.colorScheme.primary,
-                        overlayColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                        overlayColor: theme.colorScheme.primary.withValues(
+                          alpha: 0.15,
+                        ),
                         trackHeight: 4,
                       ),
                       child: Slider(
@@ -499,7 +519,9 @@ class _SettingsSheet extends ConsumerWidget {
                         divisions: 16,
                         label: '${(navBarOpacity * 100).toInt()}%',
                         onChanged: (val) {
-                          ref.read(navBarOpacityProvider.notifier).setOpacity(val);
+                          ref
+                              .read(navBarOpacityProvider.notifier)
+                              .setOpacity(val);
                         },
                       ),
                     ),
@@ -538,7 +560,9 @@ class _SettingsSheet extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: theme.colorScheme.outline),
                 ),
@@ -589,7 +613,9 @@ class _SettingsSheet extends ConsumerWidget {
                           value: hapticsEnabled,
                           activeTrackColor: theme.colorScheme.primary,
                           onChanged: (val) {
-                            ref.read(hapticsEnabledProvider.notifier).setEnabled(val);
+                            ref
+                                .read(hapticsEnabledProvider.notifier)
+                                .setEnabled(val);
                           },
                         ),
                       ],
@@ -688,7 +714,8 @@ class _SettingsSheet extends ConsumerWidget {
                             _buildOptionChip(
                               context: context,
                               label: '1 min',
-                              isSelected: notifSettings.alarmDurationMinutes == 1,
+                              isSelected:
+                                  notifSettings.alarmDurationMinutes == 1,
                               onTap: () {
                                 ref
                                     .read(notificationSettingsProvider.notifier)
@@ -699,7 +726,8 @@ class _SettingsSheet extends ConsumerWidget {
                             _buildOptionChip(
                               context: context,
                               label: '2 mins',
-                              isSelected: notifSettings.alarmDurationMinutes == 2,
+                              isSelected:
+                                  notifSettings.alarmDurationMinutes == 2,
                               onTap: () {
                                 ref
                                     .read(notificationSettingsProvider.notifier)
@@ -710,7 +738,8 @@ class _SettingsSheet extends ConsumerWidget {
                             _buildOptionChip(
                               context: context,
                               label: '3 mins',
-                              isSelected: notifSettings.alarmDurationMinutes == 3,
+                              isSelected:
+                                  notifSettings.alarmDurationMinutes == 3,
                               onTap: () {
                                 ref
                                     .read(notificationSettingsProvider.notifier)
@@ -721,7 +750,8 @@ class _SettingsSheet extends ConsumerWidget {
                             _buildOptionChip(
                               context: context,
                               label: '5 mins',
-                              isSelected: notifSettings.alarmDurationMinutes == 5,
+                              isSelected:
+                                  notifSettings.alarmDurationMinutes == 5,
                               onTap: () {
                                 ref
                                     .read(notificationSettingsProvider.notifier)
@@ -811,8 +841,7 @@ class _SettingsSheet extends ConsumerWidget {
                                   Text(
                                     'Daily nudge to finish today\'s habits before the day ends',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color:
-                                          theme.colorScheme.onSurfaceVariant,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -841,7 +870,8 @@ class _SettingsSheet extends ConsumerWidget {
                                 onTap: () {
                                   ref
                                       .read(
-                                          notificationSettingsProvider.notifier)
+                                        notificationSettingsProvider.notifier,
+                                      )
                                       .setStreakReminderHour(18);
                                 },
                               ),
@@ -854,7 +884,8 @@ class _SettingsSheet extends ConsumerWidget {
                                 onTap: () {
                                   ref
                                       .read(
-                                          notificationSettingsProvider.notifier)
+                                        notificationSettingsProvider.notifier,
+                                      )
                                       .setStreakReminderHour(20);
                                 },
                               ),
@@ -867,7 +898,8 @@ class _SettingsSheet extends ConsumerWidget {
                                 onTap: () {
                                   ref
                                       .read(
-                                          notificationSettingsProvider.notifier)
+                                        notificationSettingsProvider.notifier,
+                                      )
                                       .setStreakReminderHour(22);
                                 },
                               ),
@@ -1033,4 +1065,3 @@ class _SettingsSheet extends ConsumerWidget {
     );
   }
 }
-
