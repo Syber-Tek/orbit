@@ -2,8 +2,10 @@ package com.example.orbit
 
 import android.app.ActivityManager
 import android.app.AppOpsManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -35,6 +37,17 @@ class MainActivity : FlutterActivity() {
     private var flutterEngineRef: FlutterEngine? = null
     private var pendingAlarmAction: Pair<String, String>? = null
 
+    /// Receives the package-scoped broadcast the ring service fires after a
+    /// native "Mark done", so a running app updates in place (no launch).
+    private val taskDoneReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val taskId = intent?.getStringExtra(RingAlarmService.EXTRA_TASK_ID)
+                ?: return
+            pendingAlarmAction = "done" to taskId
+            processPendingAlarmAction()
+        }
+    }
+
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -42,6 +55,30 @@ class MainActivity : FlutterActivity() {
             window.navigationBarColor = android.graphics.Color.TRANSPARENT
         }
         handleAlarmAction(intent)
+        registerTaskDoneReceiver()
+    }
+
+    override fun onDestroy() {
+        try {
+            unregisterReceiver(taskDoneReceiver)
+        } catch (_: Throwable) {
+            // Never registered.
+        }
+        super.onDestroy()
+    }
+
+    private fun registerTaskDoneReceiver() {
+        val filter = IntentFilter(RingAlarmService.ACTION_TASK_DONE)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(taskDoneReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                registerReceiver(taskDoneReceiver, filter)
+            }
+        } catch (_: Throwable) {
+            // Registration can fail if the activity is finishing; harmless.
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -15,4 +15,9 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+    <style name="AlarmRingTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">#0E0E12</item>
+        <item name="android:statusBarColor">#0E0E12</item>
+        <item name="android:navigationBarColor">#0E0E12</item>
+    </style>
 </resources>

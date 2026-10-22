@@ -12,7 +12,7 @@ void main() async {
   await PersistenceService.instance.init();
   // Prepares the timezone database and notification plugin. Alarms are only
   // re-armed after the persisted tasks have been restored by the provider.
-  NotificationService.instance.init();
+  await NotificationService.instance.init();
   runApp(const ProviderScope(child: MyApp()));
 }
 

@@ -308,16 +308,9 @@ class FocusTimerService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        var ringMs = 2 * 60 * 1000L
-        try {
-            val flutterPrefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            ringMs = flutterPrefs.getLong(
-                "flutter.orbit.notif.alarm_duration_minutes",
-                ringMs
-            )
-        } catch (e: Exception) {
-            // Keep the default when reading fails.
-        }
+        val ringMs = FlutterPrefs
+            .getInt(this, "orbit.notif.alarm_duration_minutes", 2)
+            .coerceIn(1, 60) * 60_000L
 
         val builder = NotificationCompat.Builder(this, CHANNEL_DONE)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)

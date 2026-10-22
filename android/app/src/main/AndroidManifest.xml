@@ -1,9 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Reschedule alarms after device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Exact alarms so task reminders fire at the scheduled minute -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <!-- Screen Time usage queries and background enforcement -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
@@ -91,6 +93,18 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Ring Alarm Sound" />
         </service>
+
+        <!-- Full-screen alarm UI shown when an alarm rings (over the lock
+             screen when the device is asleep, or as launched from the ring
+             notification's full-screen intent). -->
+        <activity
+            android:name=".AlarmRingActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:showOnLockScreen="true"
+            android:taskAffinity=""
+            android:theme="@style/AlarmRingTheme" />
 
         <!-- Screen Time Active App Blocker Accessibility Service -->
         <service

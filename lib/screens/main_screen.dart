@@ -1,3 +1,4 @@
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -908,6 +909,8 @@ class _SettingsSheet extends ConsumerWidget {
                         ],
                       ],
                     ),
+                    const SizedBox(height: 24),
+                    const _AppUpdateSection(),
                   ],
                 ),
               ),
@@ -1062,6 +1065,251 @@ class _SettingsSheet extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _AppUpdateSection extends StatefulWidget {
+  const _AppUpdateSection();
+
+  @override
+  State<_AppUpdateSection> createState() => _AppUpdateSectionState();
+}
+
+class _AppUpdateSectionState extends State<_AppUpdateSection> {
+  final _updater = ShorebirdUpdater();
+  bool _isChecking = false;
+  String? _statusMessage;
+  int? _currentPatch;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentPatch();
+  }
+
+  Future<void> _loadCurrentPatch() async {
+    try {
+      final patchNumber = await _updater.readCurrentPatch();
+      if (mounted) {
+        setState(() {
+          _currentPatch = patchNumber?.number;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _checkForUpdate() async {
+    if (_isChecking) return;
+    AppHaptics.selectionClick();
+    setState(() {
+      _isChecking = true;
+      _statusMessage = 'Checking for updates...';
+    });
+
+    try {
+      final status = await _updater.checkForUpdate();
+      if (!mounted) return;
+
+      switch (status) {
+        case UpdateStatus.upToDate:
+          setState(() {
+            _statusMessage = 'App is up to date!';
+            _isChecking = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Your app is already up to date.'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          break;
+        case UpdateStatus.outdated:
+          setState(() {
+            _statusMessage = 'Update available! Downloading...';
+          });
+          await _downloadUpdate();
+          break;
+        case UpdateStatus.restartRequired:
+          setState(() {
+            _statusMessage = 'Update downloaded! Restart app to apply.';
+            _isChecking = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Update ready! Please restart the app to apply.'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          break;
+        case UpdateStatus.unavailable:
+          setState(() {
+            _statusMessage = 'Updates not supported on this build.';
+            _isChecking = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Shorebird code push is not available on debug builds.'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          break;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = 'Check failed: $e';
+        _isChecking = false;
+      });
+    }
+  }
+
+  Future<void> _downloadUpdate() async {
+    try {
+      await _updater.update();
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = 'Update downloaded! Restart app to apply.';
+        _isChecking = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Update downloaded successfully! Restart to apply.'),
+          backgroundColor: Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = 'Download failed: $e';
+        _isChecking = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'App Updates',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (_currentPatch != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Patch #$_currentPatch',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      IconlyLight.download,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Shorebird Code Push',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _statusMessage ?? 'Check and install instant OTA patches.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: _isChecking ? null : _checkForUpdate,
+                  icon: _isChecking
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
+                        )
+                      : const Icon(IconlyLight.swap, size: 16),
+                  label: Text(
+                    _isChecking ? 'Checking...' : 'Check for update',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
