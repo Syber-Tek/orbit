@@ -1,5 +1,6 @@
 package com.example.orbit
 
+import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -27,8 +28,9 @@ import androidx.core.app.NotificationCompat
  * focus-complete chime.
  *
  * Owns a foreground notification with Snooze / Mark done (tasks) or Silence
- * (focus) actions. Snooze and Silence are handled natively; Mark done opens
- * [MainActivity], which forwards to Dart to persist the completion.
+ * (focus) actions. All actions are handled natively, so the app is never
+ * launched: Snooze re-arms the alarm, Silence stops the ring, and Mark done
+ * completes the task (persisted to the Dart store) and stops the ring.
  */
 class RingAlarmService : Service() {
 
@@ -36,11 +38,22 @@ class RingAlarmService : Service() {
         const val CHANNEL_RING = "orbit_ring_alarm"
         const val PREFS = "orbit_ring_state"
 
+        const val EXTRA_KIND = "kind"
+        const val EXTRA_TASK_ID = "taskId"
+        const val EXTRA_TITLE = "title"
+        const val EXTRA_NOTIFICATION_ID = "id"
+
         private val tag = "OrbitAlarm"
 
         const val ACTION_START = "com.example.orbit.ring.START"
         const val ACTION_STOP = "com.example.orbit.ring.STOP"
         const val ACTION_SNOOZE = "com.example.orbit.ring.SNOOZE"
+        const val ACTION_DONE = "com.example.orbit.ring.DONE"
+        /** Broadcast (package-scoped) telling [AlarmRingActivity] to close. */
+        const val ACTION_RING_FINISHED = "com.example.orbit.ring.FINISHED"
+        /** Broadcast (package-scoped) telling a live app the task was completed
+         *  natively, so it can refresh in memory without being brought up. */
+        const val ACTION_TASK_DONE = "com.example.orbit.ring.TASK_DONE"
 
         /** Stops the ringing service only when it is currently ringing [taskId]. */
         fun stopForTaskId(context: Context, taskId: String) {
@@ -91,26 +104,46 @@ class RingAlarmService : Service() {
                 startRing()
             }
             ACTION_SNOOZE -> {
-                // Snoozed from the notification: re-arm natively for later and
-                // stop this ring. Dart take no part — the task data is stable.
-                val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                val snoozeMinutes = try {
-                    prefs.getInt("flutter.orbit.notif.snooze_minutes", 10)
-                } catch (t: Throwable) {
-                    10
-                }.coerceAtLeast(1)
-                val currentTaskId = taskId
+                // Snoozed from the notification or the full-screen UI: re-arm
+                // natively for later and stop this ring. Dart takes no part —
+                // the task data is stable.
+                val snoozeMinutes = FlutterPrefs
+                    .getInt(this, "orbit.notif.snooze_minutes", 10)
+                    .coerceAtLeast(1)
+                val currentTaskId =
+                    intent.getStringExtra(EXTRA_TASK_ID) ?: taskId
+                val currentTitle = intent.getStringExtra(EXTRA_TITLE) ?: title
                 if (currentTaskId != null) {
                     TaskAlarmScheduler.arm(
                         this,
                         currentTaskId,
-                        title,
+                        currentTitle,
                         System.currentTimeMillis() + snoozeMinutes * 60_000L
                     )
                 }
                 finishRing(showNotification = false)
             }
             ACTION_STOP -> finishRing(showNotification = false)
+            ACTION_DONE -> {
+                // Native "Mark done": persist completion + cancel the alarm and
+                // stop ringing, without launching the app. A live app is told
+                // via a package-scoped broadcast so it refreshes in place.
+                val currentTaskId = intent.getStringExtra(EXTRA_TASK_ID) ?: taskId
+                Log.i(tag, "onStartCommand DONE taskId=$currentTaskId")
+                if (currentTaskId != null) {
+                    TaskAlarmScheduler.markTaskDone(this, currentTaskId)
+                    try {
+                        sendBroadcast(
+                            Intent(ACTION_TASK_DONE)
+                                .setPackage(packageName)
+                                .putExtra(EXTRA_TASK_ID, currentTaskId)
+                        )
+                    } catch (t: Throwable) {
+                        // Nobody listening; the store is already updated.
+                    }
+                }
+                finishRing(showNotification = false)
+            }
             else -> {
                 // START_STICKY restart while still inside the ring window.
                 val restored = restoreRing()
@@ -182,7 +215,41 @@ class RingAlarmService : Service() {
         startPlayer()
         acquireWakeLock(ringMs)
         handler.postDelayed(stopWhenFinished, ringMs)
+        maybeLaunchFullScreen()
         Log.i(tag, "startRing complete")
+    }
+
+    /// OEM-style behaviour: when the screen is off or the keyguard is up the
+    /// full-screen alarm UI is launched directly (allowed because these alarms
+    /// are armed with setAlarmClock, which grants a temporary activity-start
+    /// allowlist). When the user is actively in the app the launch is skipped
+    /// and the heads-up notification is all they see — same as the system
+    /// clock on Samsung/Infinix devices.
+    private fun maybeLaunchFullScreen() {
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager
+            val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+            val shouldFullScreen =
+                pm?.isInteractive != true || km?.isKeyguardLocked == true
+            if (!shouldFullScreen) return
+            val intent = Intent(this, AlarmRingActivity::class.java).apply {
+                putExtra(AlarmRingActivity.EXTRA_KIND, kind)
+                putExtra(AlarmRingActivity.EXTRA_TASK_ID, taskId ?: "")
+                putExtra(AlarmRingActivity.EXTRA_TITLE, title)
+                putExtra(AlarmRingActivity.EXTRA_NOTIFICATION_ID, notificationId)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            }
+            startActivity(intent)
+            Log.i(tag, "full-screen alarm activity launched")
+        } catch (t: Throwable) {
+            // Background activity start blocked; the notification's
+            // full-screen intent covers the lock-screen case.
+            Log.w(tag, "full-screen launch blocked", t)
+        }
     }
 
     private fun finishRing(showNotification: Boolean) {
@@ -190,6 +257,14 @@ class RingAlarmService : Service() {
         handler.removeCallbacksAndMessages(null)
         stopPlayer()
         releaseWakeLock()
+        try {
+            // Tell the full-screen alarm UI (if open) to close itself.
+            sendBroadcast(
+                Intent(ACTION_RING_FINISHED).setPackage(packageName)
+            )
+        } catch (t: Throwable) {
+            // Nobody listening; fine.
+        }
         try {
             if (showNotification) {
                 stopForeground(STOP_FOREGROUND_DETACH)
@@ -265,13 +340,10 @@ class RingAlarmService : Service() {
     }
 
     private fun readRingDurationMs(): Long {
-        val minutes = try {
-            val p = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            p.getInt("flutter.orbit.notif.alarm_duration_minutes", 2)
-        } catch (t: Throwable) {
-            2
-        }
-        return (minutes.coerceIn(1, 60)) * 60_000L
+        val minutes = FlutterPrefs
+            .getInt(this, "orbit.notif.alarm_duration_minutes", 2)
+            .coerceIn(1, 60)
+        return minutes * 60_000L
     }
 
     private fun buildNotification(): Notification {
@@ -284,6 +356,23 @@ class RingAlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val fullScreenIntent = PendingIntent.getActivity(
+            this,
+            notificationId,
+            Intent(this, AlarmRingActivity::class.java).apply {
+                putExtra(AlarmRingActivity.EXTRA_KIND, kind)
+                putExtra(AlarmRingActivity.EXTRA_TASK_ID, taskId ?: "")
+                putExtra(AlarmRingActivity.EXTRA_TITLE, title)
+                putExtra(AlarmRingActivity.EXTRA_NOTIFICATION_ID, notificationId)
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val builder = NotificationCompat.Builder(this, CHANNEL_RING)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(if (kind == "focus") "Focus Complete" else title)
@@ -291,7 +380,7 @@ class RingAlarmService : Service() {
                 if (kind == "focus") {
                     "Nice work! Tap to see your session."
                 } else {
-                    "Task alarm — tap to open Orbit."
+                    "Alarm for: $title"
                 }
             )
             .setStyle(
@@ -304,6 +393,10 @@ class RingAlarmService : Service() {
                 )
             )
             .setContentIntent(contentIntent)
+            // Full-screen behaviour mirrors the system clock: screen off or
+            // locked opens the alarm UI over everything; while the user is in
+            // an app it degrades to a heads-up banner.
+            .setFullScreenIntent(fullScreenIntent, true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -341,12 +434,15 @@ class RingAlarmService : Service() {
     }
 
     private fun doneAction(): PendingIntent {
-        return PendingIntent.getActivity(
+        // Service intent (not an activity) so "Mark done" completes the task
+        // and stops the ring without ever opening the app.
+        return PendingIntent.getService(
             this,
             3,
-            Intent(this, MainActivity::class.java)
-                .putExtra("orbit_action", "done")
-                .putExtra("orbit_taskId", taskId ?: ""),
+            Intent(this, RingAlarmService::class.java)
+                .setAction(ACTION_DONE)
+                .putExtra(EXTRA_TASK_ID, taskId ?: "")
+                .putExtra(EXTRA_TITLE, title),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }

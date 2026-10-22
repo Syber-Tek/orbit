@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -49,11 +51,13 @@ const int _kIdSpace = 900000;
 
 /// Deterministic FNV-1a hash. [String.hashCode] is not guaranteed to be
 /// identical across runs or platforms, which would orphan already-scheduled
-/// notifications on every relaunch.
+/// notifications on every relaunch. Hashes the UTF-8 bytes to stay in exact
+/// parity with the Kotlin `stableHash` in TaskAlarmScheduler, so a task's
+/// notification id and its AlarmManager PendingIntent id always agree.
 int _stableId(String seed) {
   var hash = 0x811c9dc5;
-  for (final unit in seed.codeUnits) {
-    hash ^= unit;
+  for (final byte in utf8.encode(seed)) {
+    hash ^= byte;
     hash = (hash * 0x01000193) & 0xFFFFFFFF;
   }
   return hash % _kIdSpace;
@@ -68,16 +72,15 @@ typedef NotificationActionHandler =
 /// Lets the app jump to the tab the notification belongs to.
 typedef NotificationPayloadHandler = Future<void> Function(String payload);
 
-/// The concrete instant a task alarm should fire, or null when the task has no
+/// The concrete local instant a task alarm should fire, or null when the task has no
 /// alarm, no time, or its time has already passed.
-tz.TZDateTime? alarmDateTimeFor(TaskItem task) {
+DateTime? alarmExactDateTimeFor(TaskItem task) {
   if (!task.hasAlarm || task.isCompleted) return null;
   final time = task.scheduledTime;
   if (time == null) return null;
 
   final date = task.scheduledDate;
-  final scheduled = tz.TZDateTime(
-    tz.local,
+  final scheduled = DateTime(
     date.year,
     date.month,
     date.day,
@@ -86,11 +89,19 @@ tz.TZDateTime? alarmDateTimeFor(TaskItem task) {
   );
 
   // A minute of slack avoids cancelling an alarm the user just set for "now".
-  final now = tz.TZDateTime.now(tz.local);
+  final now = DateTime.now();
   if (scheduled.isAfter(now.subtract(const Duration(minutes: 1)))) {
     return scheduled;
   }
   return null;
+}
+
+/// The concrete instant a task alarm should fire, or null when the task has no
+/// alarm, no time, or its time has already passed.
+tz.TZDateTime? alarmDateTimeFor(TaskItem task) {
+  final exact = alarmExactDateTimeFor(task);
+  if (exact == null) return null;
+  return tz.TZDateTime.from(exact, tz.local);
 }
 
 class NotificationService {
@@ -127,14 +138,16 @@ class NotificationService {
       _kNoteReminderIdBase + _stableId(noteId);
 
   static String? taskIdFromPayload(String? payload) {
-    if (payload == null || !payload.startsWith(_kPayloadTaskPrefix))
+    if (payload == null || !payload.startsWith(_kPayloadTaskPrefix)) {
       return null;
+    }
     return payload.substring(_kPayloadTaskPrefix.length);
   }
 
   static String? noteIdFromPayload(String? payload) {
-    if (payload == null || !payload.startsWith(_kPayloadNotePrefix))
+    if (payload == null || !payload.startsWith(_kPayloadNotePrefix)) {
       return null;
+    }
     return payload.substring(_kPayloadNotePrefix.length);
   }
 
@@ -235,11 +248,65 @@ class NotificationService {
   Future<void> _resolveLocalTimezone() async {
     if (_timezoneResolved) return;
     _timezoneResolved = true;
+
+    // A previously resolved zone is the most reliable source: it survives
+    // devices where FlutterTimezone intermittently fails and keeps already
+    // scheduled reminders aligned with wall-clock time.
+    final cached = await _readCachedTimezone();
+    if (cached != null) {
+      try {
+        tz.setLocalLocation(tz.getLocation(cached));
+        return;
+      } catch (_) {
+        // Stale identifier (e.g. tz database renamed it) — fall through.
+      }
+    }
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final info = await FlutterTimezone.getLocalTimezone();
+        final location = tz.getLocation(info.identifier);
+        tz.setLocalLocation(location);
+        await _cacheTimezone(info.identifier);
+        return;
+      } catch (error) {
+        debugPrint('Timezone resolve attempt $attempt failed: $error');
+      }
+    }
+
+    // Last resort: use a fixed-offset Etc/GMT zone so reminders land close to
+    // wall-clock time instead of drifting to UTC. Etc/GMT signs are inverted
+    // (Etc/GMT-5 == UTC+5) and only support whole hours.
+    final offset = DateTime.now().timeZoneOffset;
+    final hours = offset.inHours;
+    if (offset.inMinutes % 60 == 0 && hours != 0 && hours.abs() <= 14) {
+      final name = 'Etc/GMT${hours > 0 ? '-' : '+'}${hours.abs()}';
+      try {
+        tz.setLocalLocation(tz.getLocation(name));
+        debugPrint('Timezone fallback to fixed offset $name (offset $offset)');
+        return;
+      } catch (_) {
+        // Zone data missing — fall through to UTC.
+      }
+    }
+    debugPrint('Timezone fallback to UTC (offset $offset)');
+  }
+
+  Future<String?> _readCachedTimezone() async {
     try {
-      final info = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(info.identifier));
-    } catch (error) {
-      debugPrint('Falling back to UTC timezone: $error');
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('orbit.timezone_id');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _cacheTimezone(String identifier) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('orbit.timezone_id', identifier);
+    } catch (_) {
+      // Caching is best-effort; scheduling still works without it.
     }
   }
 
@@ -520,7 +587,7 @@ class NotificationService {
     // Drop any plugin-scheduled alarm that predates the native scheduler.
     await _safeCancel(taskNotificationId(task.id));
 
-    final when = alarmDateTimeFor(task);
+    final when = alarmExactDateTimeFor(task);
     if (when == null) {
       await NativeAlarmService.instance.cancelTaskAlarm(task.id);
       return;
@@ -529,10 +596,26 @@ class NotificationService {
       return;
     }
 
-    await NativeAlarmService.instance.scheduleTaskAlarm(
-      taskId: task.id,
+    // Only Android has the native AlarmManager + ring-service pipeline. Every
+    // other platform falls back to the notification plugin so alarms still
+    // fire there.
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await NativeAlarmService.instance.scheduleTaskAlarm(
+        taskId: task.id,
+        title: task.title,
+        whenMs: when.millisecondsSinceEpoch,
+      );
+      return;
+    }
+
+    final prefs = await _readPrefs();
+    await _scheduleAt(
+      id: taskNotificationId(task.id),
       title: task.title,
-      whenMs: when.millisecondsSinceEpoch,
+      body: 'Task alarm',
+      when: tz.TZDateTime.from(when, tz.local),
+      details: _reminderDetails(prefs),
+      payload: '$_kPayloadTaskPrefix${task.id}',
     );
   }
 
@@ -545,12 +628,23 @@ class NotificationService {
 
     final prefs = await _readPrefs();
     final snoozeFor = minutes ?? prefs.snoozeMinutes;
-    final when = tz.TZDateTime.now(tz.local).add(Duration(minutes: snoozeFor));
+    final when = DateTime.now().add(Duration(minutes: snoozeFor));
     await _safeCancel(taskNotificationId(task.id));
-    await NativeAlarmService.instance.scheduleTaskAlarm(
-      taskId: task.id,
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await NativeAlarmService.instance.scheduleTaskAlarm(
+        taskId: task.id,
+        title: task.title,
+        whenMs: when.millisecondsSinceEpoch,
+      );
+      return;
+    }
+    await _scheduleAt(
+      id: taskNotificationId(task.id),
       title: task.title,
-      whenMs: when.millisecondsSinceEpoch,
+      body: 'Snoozed task alarm',
+      when: tz.TZDateTime.from(when, tz.local),
+      details: _reminderDetails(prefs),
+      payload: '$_kPayloadTaskPrefix${task.id}',
     );
   }
 
@@ -568,7 +662,7 @@ class NotificationService {
     if (!_initialised) return;
 
     for (final task in tasks) {
-      if (alarmDateTimeFor(task) != null) {
+      if (alarmExactDateTimeFor(task) != null) {
         await scheduleTaskAlarm(task);
       } else {
         await cancelTaskAlarm(task.id);

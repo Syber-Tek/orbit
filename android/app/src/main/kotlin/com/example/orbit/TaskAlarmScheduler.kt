@@ -91,8 +91,23 @@ object TaskAlarmScheduler {
         )
     }
 
-    /** Arms the OS alarm. Inexact scheduling is used when exact access was
-     *  revoked or refused, so the alarm is never silently dropped. */
+    private fun showPendingIntent(context: Context, entry: AlarmEntry): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = Intent.ACTION_MAIN
+            addCategory(Intent.CATEGORY_LAUNCHER)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        return PendingIntent.getActivity(
+            context,
+            alarmId(entry.taskId).toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    /** Arms the OS alarm. Uses setAlarmClock for guaranteed exact firing even
+     *  during deep Doze mode, falling back gracefully if exact scheduling is
+     *  restricted. */
     @Synchronized
     fun arm(context: Context, taskId: String, title: String, epochMs: Long): Boolean {
         if (epochMs <= 0L) return false
@@ -103,15 +118,21 @@ object TaskAlarmScheduler {
             val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 am.canScheduleExactAlarms()
             if (canExact) {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, epochMs, pi)
+                val showPi = showPendingIntent(context, entry)
+                val clockInfo = AlarmManager.AlarmClockInfo(epochMs, showPi)
+                am.setAlarmClock(clockInfo, pi)
             } else {
                 am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, epochMs, pi)
             }
         } catch (t: Throwable) {
             try {
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, epochMs, pi)
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, epochMs, pi)
             } catch (t2: Throwable) {
-                return false
+                try {
+                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, epochMs, pi)
+                } catch (t3: Throwable) {
+                    return false
+                }
             }
         }
         val updated = registry(context).filterNot { it.taskId == taskId } + entry
@@ -142,13 +163,39 @@ object TaskAlarmScheduler {
         saveRegistry(context, registry(context).filterNot { it.taskId == taskId })
     }
 
-    /** Re-arms every future alarm after boot or package replacement. */
-    fun rescheduleAll(context: Context) {
+    /**
+     * Native "Mark done": cancels any pending OS alarm, drops it from the
+     * registry, and marks the task completed in the Dart store — all without
+     * launching the app. Used by the ring notification / full-screen UI.
+     */
+    @Synchronized
+    fun markTaskDone(context: Context, taskId: String) {
+        val am = context.getSystemService(AlarmManager::class.java)
+        val entry = registry(context).firstOrNull { it.taskId == taskId }
+        if (am != null && entry != null) {
+            try {
+                am.cancel(alarmPendingIntent(context, entry))
+            } catch (_: Throwable) {
+                // Continue with the registry/store cleanup regardless.
+            }
+        }
+        saveRegistry(context, registry(context).filterNot { it.taskId == taskId })
+        FlutterPrefs.markTaskCompleted(context, taskId)
+    }
+
+    /** Re-arms every future alarm after boot or package replacement.
+     *  Alarms whose time passed while the device was off are returned so the
+     *  caller can surface a "missed alarm" notification instead of losing
+     *  them silently. */
+    fun rescheduleAll(context: Context): List<AlarmEntry> {
         val now = System.currentTimeMillis()
-        val future = registry(context).filter { it.epochMs > now }
+        val all = registry(context)
+        val future = all.filter { it.epochMs > now }
+        val overdue = all.filter { it.epochMs <= now }
         saveRegistry(context, future)
         for (entry in future) {
             arm(context, entry.taskId, entry.title, entry.epochMs)
         }
+        return overdue
     }
 }
