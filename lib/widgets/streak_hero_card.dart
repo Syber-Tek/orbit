@@ -11,8 +11,11 @@ class StreakHeroCard extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
     final maxStreak = ref.watch(overallStreakProvider);
     final habits = ref.watch(habitListProvider);
+    final dueHabits = ref.watch(dueTodayHabitsProvider);
     final completionRate = ref.watch(dailyCompletionRateProvider);
-    final completedCount = habits.where((h) => h.isCompletedToday).length;
+    final completedCount = dueHabits.where((h) => h.isCompletedToday).length;
+    final allDaily =
+        habits.isEmpty || habits.every((habit) => habit.isPlainDaily);
 
     final now = DateTime.now();
     // Monday of the current week
@@ -49,7 +52,7 @@ class StreakHeroCard extends ConsumerWidget {
             ),
           ),
           Text(
-            'days streak',
+            allDaily ? 'days streak' : 'check-in streak',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: isDark ? const Color(0xFFD4D4D8) : const Color(0xFF27272A),
@@ -57,7 +60,7 @@ class StreakHeroCard extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Keep your daily momentum alive to expand your orbit.',
+            'Keep your momentum alive to expand your orbit.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
           ),
@@ -143,7 +146,7 @@ class StreakHeroCard extends ConsumerWidget {
                 ),
               ),
               Text(
-                '$completedCount of ${habits.length} habits • ${(completionRate * 100).toInt()}%',
+                '$completedCount of ${dueHabits.length} due today • ${(completionRate * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,

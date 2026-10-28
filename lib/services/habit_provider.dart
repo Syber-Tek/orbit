@@ -23,7 +23,6 @@ class HabitListNotifier extends Notifier<List<Habit>> {
         targetCount: 45,
         currentCount: 0,
         unit: 'mins',
-        streak: 0,
         timeOfDay: HabitTimeOfDay.morning,
         completedDates: const [],
         createdAt: now,
@@ -37,7 +36,6 @@ class HabitListNotifier extends Notifier<List<Habit>> {
         targetCount: 2500,
         currentCount: 0,
         unit: 'ml',
-        streak: 0,
         timeOfDay: HabitTimeOfDay.anytime,
         completedDates: const [],
         createdAt: now,
@@ -45,47 +43,38 @@ class HabitListNotifier extends Notifier<List<Habit>> {
     ];
   }
 
-  static String _dateKey(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
   void toggleHabit(String id) {
-    final today = _dateKey(DateTime.now());
+    final now = DateTime.now();
+    final today = Habit.dateKey(now);
     Habit? completed;
 
     state = state.map((habit) {
-      if (habit.id == id) {
-        final isDone = habit.completedDates.contains(today);
-        final newDates = List<String>.from(habit.completedDates);
+      if (habit.id != id) return habit;
+      // Off-schedule days cannot be checked in; the card is read-only there.
+      if (!habit.isScheduledOn(now)) return habit;
 
-        if (isDone) {
-          newDates.remove(today);
-          return habit.copyWith(
-            completedDates: newDates,
-            streak: habit.streak > 0 ? habit.streak - 1 : 0,
-            currentCount: 0,
-          );
-        } else {
-          newDates.add(today);
-          final updated = habit.copyWith(
-            completedDates: newDates,
-            streak: habit.streak + 1,
-            currentCount: habit.targetCount,
-          );
-          completed = updated;
-          return updated;
-        }
+      final isDone = habit.completedDates.contains(today);
+      final newDates = List<String>.from(habit.completedDates);
+
+      if (isDone) {
+        newDates.remove(today);
+        return habit.copyWith(completedDates: newDates, currentCount: 0);
       }
-      return habit;
+
+      newDates.add(today);
+      final updated = habit.copyWith(
+        completedDates: newDates,
+        currentCount: habit.targetCount,
+      );
+      completed = updated;
+      return updated;
     }).toList();
     PersistenceService.instance.saveHabits(state);
 
     // Celebrate milestone streaks when a habit crosses one.
     final done = completed;
     if (done != null) {
-      unawaited(
-        NotificationService.instance.showStreakMilestone(done),
-      );
+      unawaited(NotificationService.instance.showStreakMilestone(done));
     }
   }
 
@@ -122,8 +111,32 @@ final selectedHabitFilterProvider = NotifierProvider<HabitFilterNotifier, HabitT
   HabitFilterNotifier.new,
 );
 
-final filteredHabitsProvider = Provider<List<Habit>>((ref) {
+/// Habits due on the current day, regardless of the time-of-day filter.
+final dueTodayHabitsProvider = Provider<List<Habit>>((ref) {
   final habits = ref.watch(habitListProvider);
+  final now = DateTime.now();
+  return habits.where((h) => h.isScheduledOn(now)).toList();
+});
+
+/// Habits that are not due today. Shown in the collapsed "Not today" section.
+/// Past one-off habits drop out once their date has passed.
+final offDayHabitsProvider = Provider<List<Habit>>((ref) {
+  final habits = ref.watch(habitListProvider);
+  final now = DateTime.now();
+  final today = Habit.dateOnly(now);
+  return habits.where((h) {
+    if (h.isScheduledOn(now)) return false;
+    if (h.repeatUnit == HabitRepeatUnit.once &&
+        h.scheduleStart.isBefore(today)) {
+      return false;
+    }
+    return true;
+  }).toList();
+});
+
+/// The list rendered under "Today's Habits": due today + time-of-day filter.
+final filteredHabitsProvider = Provider<List<Habit>>((ref) {
+  final habits = ref.watch(dueTodayHabitsProvider);
   final filter = ref.watch(selectedHabitFilterProvider);
 
   if (filter == null) return habits;
@@ -133,11 +146,11 @@ final filteredHabitsProvider = Provider<List<Habit>>((ref) {
 final overallStreakProvider = Provider<int>((ref) {
   final habits = ref.watch(habitListProvider);
   if (habits.isEmpty) return 0;
-  return habits.map((h) => h.streak).reduce((a, b) => a > b ? a : b);
+  return habits.map((h) => h.currentStreak).reduce((a, b) => a > b ? a : b);
 });
 
 final dailyCompletionRateProvider = Provider<double>((ref) {
-  final habits = ref.watch(habitListProvider);
+  final habits = ref.watch(dueTodayHabitsProvider);
   if (habits.isEmpty) return 0.0;
   final done = habits.where((h) => h.isCompletedToday).length;
   return done / habits.length;

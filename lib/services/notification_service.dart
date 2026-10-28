@@ -823,17 +823,20 @@ class NotificationService {
   Future<void> showStreakMilestone(Habit habit) async {
     await init();
     if (!_initialised) return;
-    if (!_streakMilestones.contains(habit.streak)) return;
+    final streak = habit.currentStreak;
+    if (!_streakMilestones.contains(streak)) return;
     if (!_permissionGranted && !await notificationsEnabled()) return;
     _permissionGranted = true;
 
     final prefs = await _readPrefs();
+    final isDaily = habit.isPlainDaily;
     try {
       await _plugin.show(
         id: _kStreakMilestoneIdBase + _stableId(habit.id),
-        title: '${habit.streak} day streak!',
-        body:
-            '${habit.title} has run for ${habit.streak} days in a row. Keep it going.',
+        title: isDaily ? '$streak day streak!' : '$streak check-ins!',
+        body: isDaily
+            ? '${habit.title} has run for $streak days in a row. Keep it going.'
+            : '${habit.title} has been checked in $streak times in a row. Keep it going.',
         notificationDetails: _reminderDetails(prefs, streak: true),
         payload: _kPayloadStreak,
       );

@@ -1,30 +1,67 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:orbit/models/habit.dart';
+import 'package:orbit/widgets/habit_item_card.dart';
 
-import 'package:orbit/main.dart';
+Habit _habit({
+  required HabitRepeatUnit unit,
+  int every = 1,
+  List<int> weekdays = const [],
+}) {
+  return Habit(
+    id: 'card-test',
+    title: 'Test habit',
+    category: 'Health',
+    iconCodePoint: Icons.favorite_rounded.codePoint,
+    colorValue: 0xFF10B981,
+    targetCount: 1,
+    unit: 'times',
+    createdAt: DateTime(2026, 1, 5),
+    repeatUnit: unit,
+    repeatEvery: every,
+    repeatWeekdays: weekdays,
+  );
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('daily habit card keeps the compact layout', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: HabitItemCard(
+            habit: _habit(unit: HabitRepeatUnit.days),
+            onToggle: () {},
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Test habit'), findsOneWidget);
+    expect(find.text('0/1 times'), findsOneWidget);
+    expect(find.byIcon(Icons.event_repeat_rounded), findsNothing);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('off-day card is read-only and shows the schedule', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: HabitItemCard(
+            habit: _habit(
+              unit: HabitRepeatUnit.weeks,
+              every: 2,
+              weekdays: const [DateTime.tuesday],
+            ),
+            isOffDay: true,
+            onToggle: () {},
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Test habit'), findsOneWidget);
+    expect(find.textContaining('Every 2 weeks'), findsOneWidget);
+    expect(find.byIcon(Icons.nights_stay_rounded), findsOneWidget);
   });
 }

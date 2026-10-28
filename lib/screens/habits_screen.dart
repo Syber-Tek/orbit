@@ -23,10 +23,11 @@ class HabitsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final habits = ref.watch(filteredHabitsProvider);
-    final allHabits = ref.watch(habitListProvider);
+    final dueHabits = ref.watch(dueTodayHabitsProvider);
+    final offDayHabits = ref.watch(offDayHabitsProvider);
     final activeFilter = ref.watch(selectedHabitFilterProvider);
 
-    final completedCount = allHabits.where((h) => h.isCompletedToday).length;
+    final completedCount = dueHabits.where((h) => h.isCompletedToday).length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -104,7 +105,7 @@ class HabitsScreen extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        '$completedCount/${allHabits.length} Done',
+                        '$completedCount/${dueHabits.length} Done',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -172,7 +173,9 @@ class HabitsScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 36),
                       child: Center(
                         child: Text(
-                          'No habits for this time period.',
+                          dueHabits.isEmpty
+                              ? 'No habits due today. Rest day.'
+                              : 'No habits for this time period.',
                           style: TextStyle(
                             color: isDark
                                 ? Colors.grey.shade500
@@ -208,7 +211,26 @@ class HabitsScreen extends ConsumerWidget {
                       );
                     }),
 
-                  const SizedBox(height: 28),
+                  if (offDayHabits.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _NotTodaySection(
+                      habits: offDayHabits,
+                      onEdit: (habit) {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) =>
+                              AddHabitSheet(initialHabit: habit),
+                        );
+                      },
+                      onDelete: (habit) {
+                        ref.read(habitListProvider.notifier).deleteHabit(habit.id);
+                      },
+                    ),
+                    const SizedBox(height: 22),
+                  ] else
+                    const SizedBox(height: 28),
 
                   // Quick Notes Section (Inspired by Ref 3)
                   Row(
@@ -390,6 +412,108 @@ class HabitsScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Collapsed list of habits that are not scheduled for today. They stay
+/// reachable for editing and deleting, but cannot be checked in off-schedule.
+class _NotTodaySection extends StatefulWidget {
+  final List<Habit> habits;
+  final ValueChanged<Habit> onEdit;
+  final ValueChanged<Habit> onDelete;
+
+  const _NotTodaySection({
+    required this.habits,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  State<_NotTodaySection> createState() => _NotTodaySectionState();
+}
+
+class _NotTodaySectionState extends State<_NotTodaySection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.event_repeat_rounded,
+                    size: 16,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Not today',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${widget.habits.length}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF18181B),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 20,
+                    color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_expanded) ...[
+          const SizedBox(height: 8),
+          ...widget.habits.map(
+            (habit) => HabitItemCard(
+              habit: habit,
+              isOffDay: true,
+              onToggle: () {},
+              onEdit: () => widget.onEdit(habit),
+              onDelete: () => widget.onDelete(habit),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
